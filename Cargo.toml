@@ -1,0 +1,19 @@
+[package]
+name = "openvpn-cred-management"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.19", features = ["derive", "cargo"] }
+clap-verbosity-flag = "2.2.2"
+color-eyre = "0.6.3"
+derive_more = { version = "1.0.0", features = ["deref", "display"] }
+directories = "5.0.1"
+itertools = "0.13.0"
+log = "0.4.22"
+regex = "1.11.0"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_with = "3.10.0"
+simplelog = "0.12.2"
+toml = "0.8.19"
+xshell = "0.2.6"
