@@ -14,7 +14,7 @@ fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     // parse CLI
-    let CliArgs { config_path, action, verbosity } = CliArgs::parse();
+    let CliArgs { config_path, profile, action, verbosity } = CliArgs::parse();
 
     // init logging
     let logger_config = simplelog::ConfigBuilder::new().build();
@@ -33,6 +33,7 @@ fn main() -> color_eyre::Result<()> {
     let config = Config::read_or_init(&config_path)?;
 
     // actions
+    let profile = config.get_profile(profile)?;
     match action {
         Action::List => todo!(),
         Action::NewUser { username, days } => todo!(),

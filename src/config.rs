@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use color_eyre::eyre::{eyre, OptionExt};
+use color_eyre::eyre::{bail, eyre, OptionExt};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
@@ -67,10 +67,13 @@ pub struct Profile {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(try_from = "ConfigValidator", rename_all = "kebab-case")]
 pub struct Config {
     /// The path to the EasyRSA executable.
     pub easy_rsa_path: PathBuf,
+
+    /// The default profile to operate on.
+    pub default_profile: Option<String>,
 
     /// The list of known profiles.
     pub profiles: Vec<Profile>,
@@ -90,6 +93,7 @@ impl Config {
         };
         Self {
             easy_rsa_path: "/usr/share/easy-rsa/3/easyrsa".into(),
+            default_profile: Some("example".into()),
             profiles: vec![profile],
         }
     }
@@ -116,5 +120,44 @@ impl Config {
             config
         };
         Ok(config)
+    }
+
+    /// Get the profile with the given name.
+    pub fn get_profile(&self, name: Option<impl AsRef<str>>) -> color_eyre::Result<&Profile> {
+        let name = name
+            .as_ref()
+            .map(AsRef::as_ref)
+            .or_else(|| self.default_profile.as_deref())
+            .ok_or_eyre("No profile specified")?;
+        self.profiles
+            .iter()
+            .find(|p| p.name == name)
+            .ok_or_else(|| eyre!(r#"Cannot find a profile named "{name}""#))
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct ConfigValidator {
+    easy_rsa_path: PathBuf,
+    default_profile: Option<String>,
+    profiles: Vec<Profile>,
+}
+impl TryFrom<ConfigValidator> for Config {
+    type Error = color_eyre::Report;
+
+    fn try_from(config: ConfigValidator) -> Result<Self, Self::Error> {
+        let ConfigValidator { easy_rsa_path, default_profile, profiles } = config;
+
+        // `default_profile` has to reference an existing profile
+        if let Some(ref name) = default_profile {
+            if profiles.iter().find(|p| &p.name == name).is_none() {
+                bail!(
+                    r#"The specified default profile "{name}" does not reference a known profile"#
+                )
+            }
+        }
+
+        Ok(Self { easy_rsa_path, default_profile, profiles })
     }
 }

@@ -15,6 +15,12 @@ pub struct CliArgs {
     #[arg(short = 'c', long = "config", value_name = "PATH")]
     pub config_path: Option<PathBuf>,
 
+    /// Manually select a profile to operate on.
+    ///
+    /// You can also specify a default profile in the config file.
+    #[arg(short = 'p', long = "profile", value_name = "NAME")]
+    pub profile: Option<String>,
+
     #[command(subcommand)]
     pub action: Action,
 
