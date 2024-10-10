@@ -25,9 +25,11 @@ pub struct CliArgs {
 #[derive(Clone, Debug, Subcommand)]
 pub enum Action {
     /// List all valid certificates.
+    #[command(visible_aliases = ["ls"])]
     List,
 
     /// Generate a certificate for a new user.
+    #[command(visible_aliases = ["new"])]
     NewUser {
         /// The username of the certificate to generate.
         #[arg(index = 1, value_name = "NAME")]
@@ -39,6 +41,7 @@ pub enum Action {
     },
 
     /// Revoke the certificate for an existing user.
+    #[command(visible_aliases = ["rm"])]
     RmUser {
         /// The username of the user to revoke.
         #[arg(index = 1, value_name = "NAME")]
@@ -50,6 +53,7 @@ pub enum Action {
     },
 
     /// Create redistributable packages for the specified users.
+    #[command(visible_aliases = ["pkg", "package"])]
     PackageFor {
         /// The usernames of the users to package for.
         #[arg(index = 1, value_name = "NAME", required = true)]
