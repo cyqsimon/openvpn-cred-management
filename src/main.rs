@@ -3,10 +3,14 @@ mod cli;
 mod config;
 mod types;
 
+use std::path::Path;
+
 use clap::Parser;
+use color_eyre::eyre::bail;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
+    action::list_users,
     cli::{Action, CliArgs},
     config::{default_config_path, Config},
 };
@@ -33,11 +37,16 @@ fn main() -> color_eyre::Result<()> {
         None => default_config_path()?,
     };
     let config = Config::read_or_init(&config_path)?;
+    let config_dir = match config_path.parent() {
+        Some(parent) if parent != Path::new("") => parent,
+        Some(_) => Path::new("."), // current directory
+        None => bail!("Cannot get the parent directory of {config_path:?}"),
+    };
 
     // actions
     let profile = config.get_profile(profile)?;
     match action {
-        Action::List => todo!(),
+        Action::List => list_users(config_dir, profile)?,
         Action::NewUser { username, days } => todo!(),
         Action::RmUser { username, no_update_crl } => todo!(),
         Action::PackageFor { usernames, add_prefix, output_dir } => todo!(),
