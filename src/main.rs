@@ -1,6 +1,7 @@
 mod action;
 mod cli;
 mod config;
+mod types;
 
 use clap::Parser;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
