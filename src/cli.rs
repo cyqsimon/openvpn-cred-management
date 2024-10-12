@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use clap_verbosity_flag::{InfoLevel, Verbosity};
+use serde::{Deserialize, Serialize};
 
 use crate::types::Username;
 
@@ -28,7 +29,12 @@ pub struct CliArgs {
     pub verbosity: Verbosity<InfoLevel>,
 }
 
-#[derive(Clone, Debug, Subcommand)]
+#[derive(Clone, Debug, Subcommand, strum::EnumDiscriminants)]
+#[strum_discriminants(
+    name(ActionType),
+    derive(Hash, Ord, PartialOrd, strum::EnumIter, Serialize, Deserialize),
+    serde(rename_all = "kebab-case")
+)]
 pub enum Action {
     /// List all valid certificates.
     #[command(visible_aliases = ["ls"])]

@@ -15,5 +15,6 @@ regex = "1.11.0"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_with = "3.10.0"
 simplelog = "0.12.2"
+strum = { version = "0.26.3", features = ["derive"] }
 toml = "0.8.19"
 xshell = "0.2.6"

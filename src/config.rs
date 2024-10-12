@@ -7,6 +7,8 @@ use color_eyre::eyre::{bail, eyre, OptionExt};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
+use crate::types::CustomScriptsMap;
+
 fn project_dirs() -> color_eyre::Result<ProjectDirs> {
     ProjectDirs::from("net", "scheimong", "openvpn-cred-management")
         .ok_or_eyre("Cannot determine your home directory")
@@ -70,6 +72,12 @@ pub struct Profile {
 
     /// Packaging settings.
     pub packaging: Option<Packaging>,
+
+    /// Additional scripts to be run after running an action,
+    /// defined separately for each type of action.
+    ///
+    /// These scripts are run in the current working directory.
+    pub post_action_scripts: Option<CustomScriptsMap>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -100,6 +108,7 @@ impl Config {
             name: "example".into(),
             easy_rsa_pki_dir: "/etc/openvpn/server/example.auth.d/".into(),
             packaging: Some(packaging),
+            post_action_scripts: Some(Default::default()),
         };
         Self {
             easy_rsa_path: "/usr/share/easy-rsa/3/easyrsa".into(),
