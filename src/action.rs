@@ -45,3 +45,36 @@ pub fn new_user(
 
     Ok(())
 }
+
+pub fn remove_user(
+    config_dir: impl AsRef<Path>,
+    config: &Config,
+    profile: &Profile,
+    username: &Username,
+    update_crl: bool,
+) -> color_eyre::Result<()> {
+    let config_dir = config_dir.as_ref();
+
+    if !get_users(config_dir, profile)?.contains(username) {
+        bail!(
+            "{username} does not exists in profile {p}",
+            p = profile.name
+        );
+    }
+
+    let easy_rsa = &config.easy_rsa_path;
+    // allow `easy_rsa_pki_dir` to be relative to the config file
+    let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
+
+    let sh = Shell::new()?;
+    cmd!(
+        sh,
+        "{easy_rsa} --batch --pki-dir={pki_dir} revoke {username}"
+    )
+    .run()?;
+    if update_crl {
+        cmd!(sh, "{easy_rsa} --batch --pki-dir={pki_dir} gen-crl").run()?;
+    }
+
+    Ok(())
+}

@@ -10,7 +10,7 @@ use color_eyre::eyre::bail;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
-    action::{list_users, new_user},
+    action::{list_users, new_user, remove_user},
     cli::{Action, CliArgs},
     config::{default_config_path, Config},
 };
@@ -50,7 +50,9 @@ fn main() -> color_eyre::Result<()> {
         Action::NewUser { username, days } => {
             new_user(config_dir, &config, profile, &username, days)?
         }
-        Action::RmUser { username, no_update_crl } => todo!(),
+        Action::RmUser { username, no_update_crl } => {
+            remove_user(config_dir, &config, profile, &username, !no_update_crl)?
+        }
         Action::PackageFor { usernames, add_prefix, output_dir } => todo!(),
     }
 
