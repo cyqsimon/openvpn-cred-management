@@ -46,6 +46,12 @@ pub struct Packaging {
     /// Any contained symlinks will be followed.
     pub skel_dir: PathBuf,
 
+    /// Scripts to be run on the skeleton directory before being used.
+    ///
+    /// These scripts are run on a temporary copy of the skeleton directory;
+    /// the actual skeleton directory remains unchanged.
+    pub skel_map_scripts: Vec<String>,
+
     /// The subpath within the skeleton directory to write the user's certificate.
     pub cert_subpath: RelativePathBuf,
 
@@ -83,6 +89,10 @@ impl Config {
     fn example() -> Self {
         let packaging = Packaging {
             skel_dir: "skel/example/".into(),
+            skel_map_scripts: vec![
+                r#"echo "You can apply custom transforms to your skeleton directory""#.into(),
+                r#"echo "before they are used to create user packages""#.into(),
+            ],
             cert_subpath: "creds/client.crt".try_into().unwrap(),
             key_subpath: "creds/client.key".try_into().unwrap(),
         };
