@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ffi::OsStr, str::FromStr, sync::LazyLock};
+use std::{collections::BTreeMap, ffi::OsStr, path::Path, str::FromStr, sync::LazyLock};
 
 use color_eyre::eyre::OptionExt;
 use regex::Regex;
@@ -26,6 +26,12 @@ impl FromStr for Username {
 impl AsRef<OsStr> for Username {
     fn as_ref(&self) -> &OsStr {
         OsStr::new(&self.0)
+    }
+}
+/// Required by path concatenation.
+impl AsRef<Path> for Username {
+    fn as_ref(&self) -> &Path {
+        Path::new(&self.0)
     }
 }
 

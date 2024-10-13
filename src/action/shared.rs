@@ -1,5 +1,12 @@
-use std::{borrow::Cow, collections::BTreeSet, ffi::OsString, fs, path::Path};
+use std::{
+    borrow::Cow,
+    collections::BTreeSet,
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+};
 
+use color_eyre::eyre::eyre;
 use log::warn;
 
 use crate::{config::Profile, types::Username};
@@ -63,4 +70,32 @@ pub fn get_users(
         .collect();
 
     Ok(output)
+}
+
+pub fn get_cert_path(
+    config_dir: impl AsRef<Path>,
+    profile: &Profile,
+    username: &Username,
+) -> color_eyre::Result<PathBuf> {
+    // allow `easy_rsa_pki_dir` to be relative to the config file
+    let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
+
+    let path = pki_dir.join("issued").join(format!("{username}.crt"));
+    path.is_file()
+        .then_some(path)
+        .ok_or_else(|| eyre!(r#"Cannot find a certificate for user "{username}""#))
+}
+
+pub fn get_key_path(
+    config_dir: impl AsRef<Path>,
+    profile: &Profile,
+    username: &Username,
+) -> color_eyre::Result<PathBuf> {
+    // allow `easy_rsa_pki_dir` to be relative to the config file
+    let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
+
+    let path = pki_dir.join("private").join(format!("{username}.key"));
+    path.is_file()
+        .then_some(path)
+        .ok_or_else(|| eyre!(r#"Cannot find a key for user "{username}""#))
 }

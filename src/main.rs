@@ -3,14 +3,14 @@ mod cli;
 mod config;
 mod types;
 
-use std::path::Path;
+use std::{env, path::Path};
 
 use clap::Parser;
 use color_eyre::eyre::bail;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
-    action::{list_users, new_user, remove_user},
+    action::{list_users, new_user, package, remove_user},
     cli::{Action, CliArgs},
     config::{default_config_path, Config},
 };
@@ -59,7 +59,10 @@ fn main() -> color_eyre::Result<()> {
         Action::RmUser { username, no_update_crl } => {
             remove_user(config_dir, &config, profile, &username, !no_update_crl)?
         }
-        Action::PackageFor { usernames, add_prefix, output_dir } => todo!(),
+        Action::PackageFor { usernames, add_prefix, output_dir } => {
+            let output_dir = output_dir.unwrap_or(env::current_dir()?);
+            package(config_dir, profile, &usernames, add_prefix, output_dir)?;
+        }
     }
 
     Ok(())

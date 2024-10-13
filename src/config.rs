@@ -39,6 +39,11 @@ impl TryFrom<&str> for RelativePathBuf {
         PathBuf::from(path).try_into()
     }
 }
+impl AsRef<Path> for RelativePathBuf {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
