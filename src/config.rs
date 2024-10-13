@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use color_eyre::eyre::{bail, eyre, OptionExt};
+use color_eyre::eyre::{bail, eyre, Context, OptionExt};
 use directories::ProjectDirs;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -140,8 +140,10 @@ impl Config {
     pub fn load_from(config_path: impl AsRef<Path>) -> color_eyre::Result<Config> {
         let config_path = config_path.as_ref();
 
-        let config_str = fs::read_to_string(config_path)?;
-        let config = toml::from_str(&config_str)?;
+        let config_str = fs::read_to_string(config_path)
+            .wrap_err_with(|| format!("Cannot read config file {config_path:?}"))?;
+        let config = toml::from_str(&config_str)
+            .wrap_err_with(|| format!("Deserialising config file {config_path:?} failed"))?;
 
         Ok(config)
     }

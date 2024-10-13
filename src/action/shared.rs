@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use color_eyre::eyre::eyre;
+use color_eyre::eyre::{eyre, Context};
 use log::warn;
 
 use crate::{config::Profile, types::Username};
@@ -17,7 +17,8 @@ pub fn get_users(
 ) -> color_eyre::Result<Vec<Username>> {
     fn list_names(dir: impl AsRef<Path>) -> color_eyre::Result<BTreeSet<OsString>> {
         let dir = dir.as_ref();
-        let names = fs::read_dir(dir)?
+        let names = fs::read_dir(dir)
+            .wrap_err_with(|| format!("Failed to read {dir:?}"))?
             .filter_map(|de| {
                 de.inspect_err(|e| {
                     warn!("Failed to read a file in {dir:?}; the user list may be incomplete");
@@ -46,9 +47,15 @@ pub fn get_users(
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
 
-    let cert_names = list_names(pki_dir.join("issued"))?;
-    let key_names = list_names(pki_dir.join("private"))?;
+    // list all certificates and keys
+    let cert_dir = pki_dir.join("issued");
+    let cert_names = list_names(&cert_dir)
+        .wrap_err_with(|| format!("Cannot read certificate directory {cert_dir:?}"))?;
+    let key_dir = pki_dir.join("private");
+    let key_names =
+        list_names(&key_dir).wrap_err_with(|| format!("Cannot read key directory {key_dir:?}"))?;
 
+    // warn about difference
     cert_names
         .difference(&key_names)
         .for_each(|n| warn!("User {n:?} seems to have a certificate but no key"));
@@ -56,6 +63,7 @@ pub fn get_users(
         .difference(&cert_names)
         .for_each(|n| warn!("User {n:?} seems to have a key but no certificate"));
 
+    // build output
     let output = cert_names
         .union(&key_names)
         .filter_map(|n| {

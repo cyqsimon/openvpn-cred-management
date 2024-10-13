@@ -6,7 +6,7 @@ mod types;
 use std::{env, path::Path};
 
 use clap::Parser;
-use color_eyre::eyre::bail;
+use color_eyre::eyre::{bail, Context};
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
@@ -35,12 +35,14 @@ fn main() -> color_eyre::Result<()> {
         logger_config,
         TerminalMode::Stderr,
         ColorChoice::Auto,
-    )?;
+    )
+    .wrap_err("Failed to initialise logger")?;
 
     // get config path
     let config_path = match config_path {
         Some(p) => p,
-        None => default_config_path()?,
+        None => default_config_path()
+            .wrap_err("No config path specified, and failed to get default config path")?,
     };
     let config_dir = match config_path.parent() {
         Some(parent) if parent != Path::new("") => parent,
@@ -50,27 +52,46 @@ fn main() -> color_eyre::Result<()> {
 
     // handle config init
     if let Action::InitConfig = action {
-        init_config(config_path)?;
+        init_config(&config_path)
+            .wrap_err_with(|| format!("Failed to initialise config {config_path:?}"))?;
         return Ok(());
     }
 
     // load config
-    let config = Config::load_from(&config_path)?;
+    let config = Config::load_from(&config_path)
+        .wrap_err_with(|| format!("Failed to load config {config_path:?}"))?;
+
+    // get profile
+    let profile = config
+        .get_profile(profile)
+        .wrap_err("Cannot select a profile")?;
+    let profile_name = &profile.name;
 
     // other actions
-    let profile = config.get_profile(profile)?;
     match action {
         Action::InitConfig => unreachable!(), // already handled
-        Action::List => list_users(config_dir, profile)?,
+        Action::List => list_users(config_dir, profile)
+            .wrap_err_with(|| format!(r#"Failed to list users of profile "{profile_name}""#))?,
         Action::NewUser { usernames, days } => {
-            new_user(config_dir, &config, profile, &usernames, days)?
+            new_user(config_dir, &config, profile, &usernames, days).wrap_err_with(|| {
+                format!(r#"Failed while adding users to profile "{profile_name}""#)
+            })?
         }
         Action::RmUser { usernames, no_update_crl } => {
-            remove_user(config_dir, &config, profile, &usernames, !no_update_crl)?
+            remove_user(config_dir, &config, profile, &usernames, !no_update_crl).wrap_err_with(
+                || format!(r#"Failed while removing users from profile "{profile_name}""#),
+            )?
         }
         Action::PackageFor { usernames, add_prefix, output_dir } => {
-            let output_dir = output_dir.unwrap_or(env::current_dir()?);
-            package(config_dir, profile, &usernames, add_prefix, output_dir)?;
+            let output_dir = match output_dir {
+                Some(dir) => dir,
+                None => env::current_dir().wrap_err(
+                    "No output directory specified, and failed to get current working directory",
+                )?,
+            };
+            package(config_dir, profile, &usernames, add_prefix, output_dir).wrap_err_with(
+                || format!(r#"Failed while packaging users of profile "{profile_name}""#),
+            )?;
         }
     }
 

@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ffi::OsStr, path::Path, str::FromStr, sync::LazyLock};
 
-use color_eyre::eyre::{bail, OptionExt};
+use color_eyre::eyre::{bail, eyre};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -19,7 +19,7 @@ impl FromStr for Username {
         VALIDATOR
             .is_match(s)
             .then(|| Self(s.to_owned()))
-            .ok_or_eyre(r#"Username must match "{REGEX}""#)
+            .ok_or_else(|| eyre!(r#"Username "{s}" does not match "{REGEX}""#))
     }
 }
 /// Required by xshell.

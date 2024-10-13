@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use color_eyre::eyre::{bail, OptionExt};
+use color_eyre::eyre::{bail, eyre, Context};
 use fs_more::directory::{
     copy_directory, DirectoryCopyDepthLimit, DirectoryCopyOptions, SymlinkBehaviour,
 };
@@ -28,20 +28,28 @@ pub fn init_config(config_path: impl AsRef<Path>) -> color_eyre::Result<()> {
     // create parent dir
     let parent = config_path
         .parent()
-        .ok_or_eyre(format!("Cannot get parent directory of {config_path:?}"))?;
-    fs::create_dir_all(parent)?;
+        .ok_or_else(|| eyre!("Cannot get parent directory of {config_path:?}"))?;
+    fs::create_dir_all(parent).wrap_err_with(|| format!("Cannot create directory {parent:?}"))?;
     info!("Created directory {parent:?}");
 
     // create config
     let config = Config::example();
-    fs::write(config_path, toml::to_string_pretty(&config)?)?;
+    let config_str =
+        toml::to_string_pretty(&config).wrap_err("Serialisation of default config failed")?;
+    fs::write(config_path, config_str)
+        .wrap_err_with(|| format!("Failed to write config file to {config_path:?}"))?;
     info!("Created example config file at {config_path:?}");
 
     Ok(())
 }
 
 pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre::Result<()> {
-    let output = get_users(config_dir, profile)?.into_iter().join("\n");
+    let profile_name = &profile.name;
+
+    let output = get_users(config_dir, profile)
+        .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?
+        .into_iter()
+        .join("\n");
     println!("{output}");
     Ok(())
 }
@@ -54,12 +62,14 @@ pub fn new_user(
     days: Option<usize>,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
+    let profile_name = &profile.name;
 
     // sanity check
-    let known_users = get_users(config_dir, profile)?;
+    let known_users = get_users(config_dir, profile)
+        .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
     for username in usernames {
         if known_users.contains(username) {
-            bail!("{username} already exists in profile {p}", p = profile.name);
+            bail!(r#"User "{username}" already exists in profile "{profile_name}""#);
         }
     }
 
@@ -69,13 +79,13 @@ pub fn new_user(
     let days_arg = days.map(|d| format!("--days={d}"));
     let days_arg = days_arg.as_ref(); // otherwise use of moved value
 
-    let sh = Shell::new()?;
+    let sh = Shell::new().wrap_err("Failed to create subshell")?;
     for username in usernames {
         cmd!(
             sh,
             "{easy_rsa} --batch --pki-dir={pki_dir} --no-pass {days_arg...} build-client-full {username}"
         )
-        .run()?;
+        .run().wrap_err("User creation command failed to execute")?;
     }
 
     Ok(())
@@ -89,14 +99,13 @@ pub fn remove_user(
     update_crl: bool,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
+    let profile_name = &profile.name;
 
-    let known_users = get_users(config_dir, profile)?;
+    let known_users = get_users(config_dir, profile)
+        .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
     for username in usernames {
         if !known_users.contains(username) {
-            bail!(
-                "{username} does not exists in profile {p}",
-                p = profile.name
-            );
+            bail!(r#"User "{username}" does not exists in profile "{profile_name}""#);
         }
     }
 
@@ -104,17 +113,20 @@ pub fn remove_user(
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
 
-    let sh = Shell::new()?;
+    let sh = Shell::new().wrap_err("Failed to create subshell")?;
     for username in usernames {
         cmd!(
             sh,
             "{easy_rsa} --batch --pki-dir={pki_dir} revoke {username}"
         )
-        .run()?;
+        .run()
+        .wrap_err("User deletion command failed to execute")?;
     }
 
     if update_crl {
-        cmd!(sh, "{easy_rsa} --batch --pki-dir={pki_dir} gen-crl").run()?;
+        cmd!(sh, "{easy_rsa} --batch --pki-dir={pki_dir} gen-crl")
+            .run()
+            .wrap_err("CRL update command failed to execute")?;
     }
 
     Ok(())
@@ -133,13 +145,14 @@ pub fn package(
 
     // sanity checks
     let Some(ref packaging) = profile.packaging else {
-        bail!(r#"Profile {profile_name} does not contain a "packaging" section"#);
+        bail!(r#"Profile "{profile_name}" does not contain a "packaging" section"#);
     };
 
-    let known_users = get_users(config_dir, profile)?;
+    let known_users = get_users(config_dir, profile)
+        .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
     for username in usernames {
         if !known_users.contains(username) {
-            bail!("User {username} does not exists in profile {profile_name}");
+            bail!(r#"User "{username}" does not exists in profile "{profile_name}""#);
         }
     }
 
@@ -147,52 +160,77 @@ pub fn package(
     let skel_dir = config_dir.join(&packaging.skel_dir);
 
     // copy skeleton directory
-    let temp_dir = TempDir::with_prefix("openvpn-cred-management-")?;
+    let temp_dir = TempDir::with_prefix("openvpn-cred-management-")
+        .wrap_err("Cannot create temporary working directory")?;
     let mapped_skel_dir = temp_dir.path().join("mapped-skel");
     let copy_options = DirectoryCopyOptions {
         copy_depth_limit: DirectoryCopyDepthLimit::Limited { maximum_depth: 64 },
         symlink_behaviour: SymlinkBehaviour::Follow,
         ..Default::default()
     };
-    copy_directory(skel_dir, &mapped_skel_dir, copy_options)?;
+    copy_directory(&skel_dir, &mapped_skel_dir, copy_options).wrap_err_with(|| {
+        format!("Failed to copy skeleton directory {skel_dir:?} to {mapped_skel_dir:?}")
+    })?;
 
     // apply transforms
-    let sh = Shell::new()?;
+    let sh = Shell::new().wrap_err("Failed to create subshell")?;
     sh.change_dir(&mapped_skel_dir);
     for script in &packaging.skel_map_scripts {
-        cmd!(sh, "bash -c {script}").run()?;
+        cmd!(sh, "bash -c {script}")
+            .run()
+            .wrap_err("A skeleton transform script failed to execute")?;
     }
     drop(sh);
 
     // create parent dir for individual packages
     let pkg_parent_dir = temp_dir.path().join("pkgs");
-    fs::create_dir_all(&pkg_parent_dir)?;
+    fs::create_dir_all(&pkg_parent_dir).wrap_err_with(|| {
+        format!("Failed to create packages' parent directory {pkg_parent_dir:?}")
+    })?;
 
     // package for each user
     for username in usernames {
         // copy skeleton directory
         let pkg_dir = pkg_parent_dir.join(username);
-        copy_directory(&mapped_skel_dir, &pkg_dir, Default::default())?;
+        copy_directory(&mapped_skel_dir, &pkg_dir, Default::default()).wrap_err_with(|| {
+            format!(
+                "Failed to copy transformed skeleton directory {mapped_skel_dir:?} to {pkg_dir:?}"
+            )
+        })?;
 
         // create subdirectories for certificate and key
         for subpath in [&packaging.cert_subpath, &packaging.key_subpath] {
             match subpath.parent() {
                 Some(parent) if parent != Path::new("") => {
-                    fs::create_dir_all(pkg_dir.join(parent))?
+                    let full_dir_path = pkg_dir.join(parent);
+                    fs::create_dir_all(&full_dir_path).wrap_err_with(|| {
+                        format!(
+                            "Failed to create parent path {full_dir_path:?} for certificate or key"
+                        )
+                    })?
                 }
                 Some(_) | None => (), // no intermediate directories to create
             }
         }
 
-        // copy certificate and key
-        fs::copy(
-            get_cert_path(config_dir, profile, username)?,
-            pkg_dir.join(&packaging.cert_subpath),
-        )?;
-        fs::copy(
-            get_key_path(config_dir, profile, username)?,
-            pkg_dir.join(&packaging.key_subpath),
-        )?;
+        // copy certificate
+        let cert_source_path =
+            get_cert_path(config_dir, profile, username).wrap_err_with(|| {
+                format!(r#"Failed to get certificate path for user "{username}" in profile "{profile_name}""#)
+            })?;
+        let cert_target_path = pkg_dir.join(&packaging.cert_subpath);
+        fs::copy(&cert_source_path, &cert_target_path).wrap_err_with(|| {
+            format!(r#"Failed to copy certificate {cert_source_path:?} to {cert_target_path:?}"#)
+        })?;
+
+        // copy key
+        let key_source_path = get_key_path(config_dir, profile, username).wrap_err_with(|| {
+            format!(r#"Failed to get key path for user "{username}" in profile "{profile_name}""#)
+        })?;
+        let key_target_path = pkg_dir.join(&packaging.key_subpath);
+        fs::copy(&key_source_path, &key_target_path).wrap_err_with(|| {
+            format!(r#"Failed to copy key {key_source_path:?} to {key_target_path:?}"#)
+        })?;
 
         // write archive
         let archive_name = if add_prefix {
@@ -200,9 +238,12 @@ pub fn package(
         } else {
             format!("{username}.zip")
         };
-        let zip_file = File::create_new(output_dir.join(archive_name))?;
+        let zip_file = File::create_new(output_dir.join(&archive_name))
+            .wrap_err_with(|| format!(r#"Failed to create "{archive_name}" for output"#))?;
         let zip_writer = ZipWriter::new(zip_file);
-        zip_writer.create_from_directory(&pkg_dir)?;
+        zip_writer
+            .create_from_directory(&pkg_dir)
+            .wrap_err_with(|| format!(r#"Failed while writing into "{archive_name}""#))?;
     }
 
     Ok(())
