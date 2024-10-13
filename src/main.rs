@@ -53,11 +53,11 @@ fn main() -> color_eyre::Result<()> {
     let profile = config.get_profile(profile)?;
     match action {
         Action::List => list_users(config_dir, profile)?,
-        Action::NewUser { username, days } => {
-            new_user(config_dir, &config, profile, &username, days)?
+        Action::NewUser { usernames, days } => {
+            new_user(config_dir, &config, profile, &usernames, days)?
         }
-        Action::RmUser { username, no_update_crl } => {
-            remove_user(config_dir, &config, profile, &username, !no_update_crl)?
+        Action::RmUser { usernames, no_update_crl } => {
+            remove_user(config_dir, &config, profile, &usernames, !no_update_crl)?
         }
         Action::PackageFor { usernames, add_prefix, output_dir } => {
             let output_dir = output_dir.unwrap_or(env::current_dir()?);

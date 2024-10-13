@@ -47,9 +47,9 @@ pub enum Action {
     /// Generate a certificate for a new user.
     #[command(visible_aliases = ["new"])]
     NewUser {
-        /// The username of the certificate to generate.
-        #[arg(index = 1, value_name = "NAME")]
-        username: Username,
+        /// The usernames of the certificates to generate.
+        #[arg(index = 1, value_name = "NAME", required = true)]
+        usernames: Vec<Username>,
 
         /// The number of days this certificate stays valid.
         #[arg(short = 'd', long = "days", value_name = "N")]
@@ -59,9 +59,9 @@ pub enum Action {
     /// Revoke the certificate for an existing user.
     #[command(visible_aliases = ["rm"])]
     RmUser {
-        /// The username of the user to revoke.
-        #[arg(index = 1, value_name = "NAME")]
-        username: Username,
+        /// The usernames of the users to revoke.
+        #[arg(index = 1, value_name = "NAME", required = true)]
+        usernames: Vec<Username>,
 
         /// Do not update crl.pem file.
         #[arg(long = "no-update-crl")]
