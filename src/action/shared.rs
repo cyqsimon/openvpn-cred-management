@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     collections::BTreeSet,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs,
     path::{Path, PathBuf},
 };
@@ -47,13 +47,19 @@ pub fn get_users(
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
 
-    // list all certificates and keys
+    // list all certificates
     let cert_dir = pki_dir.join("issued");
     let cert_names = list_names(&cert_dir)
         .wrap_err_with(|| format!("Cannot read certificate directory {cert_dir:?}"))?;
+
+    // list all keys
     let key_dir = pki_dir.join("private");
-    let key_names =
-        list_names(&key_dir).wrap_err_with(|| format!("Cannot read key directory {key_dir:?}"))?;
+    let key_names = {
+        let mut names = list_names(&key_dir)
+            .wrap_err_with(|| format!("Cannot read key directory {key_dir:?}"))?;
+        names.remove(OsStr::new("ca")); // filter out the CA's key
+        names
+    };
 
     // warn about difference
     cert_names
