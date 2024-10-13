@@ -5,6 +5,7 @@ use std::{
 
 use color_eyre::eyre::{bail, eyre, OptionExt};
 use directories::ProjectDirs;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::types::CustomScriptsMap;
@@ -100,6 +101,18 @@ pub struct Config {
 impl Config {
     /// Return an example config.
     pub fn example() -> Self {
+        // autodetect which one is available
+        let easy_rsa_path = [
+            "/usr/share/easy-rsa/3/easyrsa", // Fedora
+            "/usr/share/easy-rsa/easyrsa",   // Alpine, Debian
+            "/usr/bin/easyrsa",              // Arch
+        ]
+        .into_iter()
+        .map(Path::new)
+        .find_or_first(|p| p.is_file())
+        .unwrap() // first element always exists
+        .to_owned();
+
         let packaging = Packaging {
             skel_dir: "skel/example/".into(),
             skel_map_scripts: vec![
@@ -115,8 +128,9 @@ impl Config {
             packaging: Some(packaging),
             post_action_scripts: Some(Default::default()),
         };
+
         Self {
-            easy_rsa_path: "/usr/share/easy-rsa/3/easyrsa".into(),
+            easy_rsa_path,
             default_profile: Some("example".into()),
             profiles: vec![profile],
         }
