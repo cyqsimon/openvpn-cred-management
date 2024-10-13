@@ -99,7 +99,7 @@ pub struct Config {
 }
 impl Config {
     /// Return an example config.
-    fn example() -> Self {
+    pub fn example() -> Self {
         let packaging = Packaging {
             skel_dir: "skel/example/".into(),
             skel_map_scripts: vec![
@@ -122,27 +122,13 @@ impl Config {
         }
     }
 
-    /// Read the config from the specified path, or create a new example config
-    /// at this path if it does not exist.
-    pub fn read_or_init(config_path: impl AsRef<Path>) -> color_eyre::Result<Config> {
+    /// Load the config from the specified path.
+    pub fn load_from(config_path: impl AsRef<Path>) -> color_eyre::Result<Config> {
         let config_path = config_path.as_ref();
 
-        let config = if config_path.is_file() {
-            let config_str = fs::read_to_string(config_path)?;
-            toml::from_str(&config_str)?
-        } else {
-            // create parent dir
-            let parent = config_path
-                .parent()
-                .ok_or_eyre(format!("Cannot get parent directory of {config_path:?}"))?;
-            fs::create_dir_all(parent)?;
+        let config_str = fs::read_to_string(config_path)?;
+        let config = toml::from_str(&config_str)?;
 
-            // create config
-            let config = Config::example();
-            fs::write(config_path, toml::to_string_pretty(&config)?)?;
-
-            config
-        };
         Ok(config)
     }
 

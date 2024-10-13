@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ffi::OsStr, path::Path, str::FromStr, sync::LazyLock};
 
-use color_eyre::eyre::OptionExt;
+use color_eyre::eyre::{bail, OptionExt};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -35,12 +35,35 @@ impl AsRef<Path> for Username {
     }
 }
 
-/// A map of custom scripts to be run before or after a particular action.
+/// A validated map of custom scripts to be run before or after a particular action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "CustomScriptsMapValidator")]
 pub struct CustomScriptsMap(BTreeMap<ActionType, Vec<String>>);
 impl Default for CustomScriptsMap {
     fn default() -> Self {
-        let map = ActionType::iter().map(|a| (a, vec![])).collect();
+        let map = ActionType::iter()
+            .filter(|a| !matches!(a, ActionType::InitConfig)) // non-applicable subcommands
+            .map(|a| (a, vec![]))
+            .collect();
         Self(map)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
+struct CustomScriptsMapValidator(BTreeMap<ActionType, Vec<String>>);
+impl TryFrom<CustomScriptsMapValidator> for CustomScriptsMap {
+    type Error = color_eyre::Report;
+
+    fn try_from(scripts: CustomScriptsMapValidator) -> Result<Self, Self::Error> {
+        let scripts = scripts.0;
+
+        // non-applicable subcommands must not be defined
+        for action in [ActionType::InitConfig] {
+            if scripts.get(&action).is_some() {
+                bail!(r#"Custom scripts are not supported for the "{action}" subcommand"#);
+            }
+        }
+
+        Ok(Self(scripts))
     }
 }

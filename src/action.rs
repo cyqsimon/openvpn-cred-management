@@ -5,11 +5,12 @@ use std::{
     path::Path,
 };
 
-use color_eyre::eyre::bail;
+use color_eyre::eyre::{bail, OptionExt};
 use fs_more::directory::{
     copy_directory, DirectoryCopyDepthLimit, DirectoryCopyOptions, SymlinkBehaviour,
 };
 use itertools::Itertools;
+use log::info;
 use temp_dir::TempDir;
 use xshell::{cmd, Shell};
 use zip::ZipWriter;
@@ -20,6 +21,24 @@ use crate::{
     config::{Config, Profile},
     types::Username,
 };
+
+pub fn init_config(config_path: impl AsRef<Path>) -> color_eyre::Result<()> {
+    let config_path = config_path.as_ref();
+
+    // create parent dir
+    let parent = config_path
+        .parent()
+        .ok_or_eyre(format!("Cannot get parent directory of {config_path:?}"))?;
+    fs::create_dir_all(parent)?;
+    info!("Created directory {parent:?}");
+
+    // create config
+    let config = Config::example();
+    fs::write(config_path, toml::to_string_pretty(&config)?)?;
+    info!("Created example config file at {config_path:?}");
+
+    Ok(())
+}
 
 pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre::Result<()> {
     let output = get_users(config_dir, profile)?.into_iter().join("\n");

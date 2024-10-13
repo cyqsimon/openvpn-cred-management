@@ -36,10 +36,25 @@ pub struct CliArgs {
 #[derive(Clone, Debug, Subcommand, strum::EnumDiscriminants)]
 #[strum_discriminants(
     name(ActionType),
-    derive(Hash, Ord, PartialOrd, strum::EnumIter, Serialize, Deserialize),
+    derive(
+        strum::Display,
+        Hash,
+        Ord,
+        PartialOrd,
+        strum::EnumIter,
+        Serialize,
+        Deserialize
+    ),
+    strum(serialize_all = "kebab-case"),
     serde(rename_all = "kebab-case")
 )]
 pub enum Action {
+    /// Initialise a config file.
+    ///
+    /// If `config_path` is not specified, the default location is used.
+    #[command(visible_aliases = ["init"])]
+    InitConfig,
+
     /// List all valid certificates.
     #[command(visible_aliases = ["ls"])]
     List,

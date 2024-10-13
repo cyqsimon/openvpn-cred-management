@@ -10,7 +10,7 @@ use color_eyre::eyre::bail;
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
-    action::{list_users, new_user, package, remove_user},
+    action::{init_config, list_users, new_user, package, remove_user},
     cli::{Action, CliArgs},
     config::{default_config_path, Config},
 };
@@ -37,21 +37,30 @@ fn main() -> color_eyre::Result<()> {
         ColorChoice::Auto,
     )?;
 
-    // get config
+    // get config path
     let config_path = match config_path {
         Some(p) => p,
         None => default_config_path()?,
     };
-    let config = Config::read_or_init(&config_path)?;
     let config_dir = match config_path.parent() {
         Some(parent) if parent != Path::new("") => parent,
         Some(_) => Path::new("."), // current directory
         None => bail!("Cannot get the parent directory of {config_path:?}"),
     };
 
-    // actions
+    // handle config init
+    if let Action::InitConfig = action {
+        init_config(config_path)?;
+        return Ok(());
+    }
+
+    // load config
+    let config = Config::load_from(&config_path)?;
+
+    // other actions
     let profile = config.get_profile(profile)?;
     match action {
+        Action::InitConfig => unreachable!(), // already handled
         Action::List => list_users(config_dir, profile)?,
         Action::NewUser { usernames, days } => {
             new_user(config_dir, &config, profile, &usernames, days)?
