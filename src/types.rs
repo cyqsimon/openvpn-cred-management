@@ -1,9 +1,10 @@
 use std::{collections::BTreeMap, ffi::OsStr, path::Path, str::FromStr, sync::LazyLock};
 
-use color_eyre::eyre::{bail, eyre};
+use color_eyre::eyre::{bail, eyre, Context};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+use xshell::{cmd, Shell};
 
 use crate::cli::ActionType;
 
@@ -46,6 +47,30 @@ impl Default for CustomScriptsMap {
             .map(|a| (a, vec![]))
             .collect();
         Self(map)
+    }
+}
+impl CustomScriptsMap {
+    /// Run all custom scripts defined for a type of action.
+    ///
+    /// The scripts are run in the current working directory.
+    pub fn run_for(&self, action: ActionType) -> color_eyre::Result<()> {
+        // skip if map key is not found or if the map entry is empty
+        let Some(scripts) = self
+            .0
+            .get(&action)
+            .and_then(|v| (!v.is_empty()).then_some(v))
+        else {
+            return Ok(());
+        };
+
+        let sh = Shell::new().wrap_err("Failed to create subshell")?;
+        for script in scripts {
+            cmd!(sh, "bash -c {script}")
+                .run()
+                .wrap_err("A custom script failed to execute")?;
+        }
+
+        Ok(())
     }
 }
 

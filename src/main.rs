@@ -11,7 +11,7 @@ use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
     action::{init_config, list_users, new_user, package, remove_user},
-    cli::{Action, CliArgs},
+    cli::{Action, ActionType, CliArgs},
     config::{default_config_path, Config},
 };
 
@@ -93,6 +93,16 @@ fn main() -> color_eyre::Result<()> {
                 || format!(r#"Failed while packaging users of profile "{profile_name}""#),
             )?;
         }
+    }
+
+    // post-action scripts
+    if !no_post_action_scripts {
+        let action_type = ActionType::from(&action);
+        if let Some(scripts) = &profile.post_action_scripts {
+            scripts
+                .run_for(action_type)
+                .wrap_err("Failed while running post-action scripts")?;
+        };
     }
 
     Ok(())
