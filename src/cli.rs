@@ -22,6 +22,10 @@ pub struct CliArgs {
     #[arg(short = 'p', long = "profile", value_name = "NAME")]
     pub profile: Option<String>,
 
+    /// Do not run post-action scripts.
+    #[arg(long = "no-post-action-scripts", visible_aliases = ["no-post-scripts"])]
+    pub no_post_action_scripts: bool,
+
     #[command(subcommand)]
     pub action: Action,
 

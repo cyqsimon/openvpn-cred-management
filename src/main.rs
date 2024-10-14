@@ -20,7 +20,13 @@ fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     // parse CLI
-    let CliArgs { config_path, profile, action, verbosity } = CliArgs::parse();
+    let CliArgs {
+        config_path,
+        profile,
+        no_post_action_scripts,
+        action,
+        verbosity,
+    } = CliArgs::parse();
 
     // init logging
     let logger_config = simplelog::ConfigBuilder::new().build();
