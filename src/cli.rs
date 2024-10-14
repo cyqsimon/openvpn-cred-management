@@ -13,17 +13,17 @@ pub struct CliArgs {
     ///
     /// Defaults to the OS-dependent project config directory for `net.scheimong/openvpn-cred-management`.
     /// See https://docs.rs/directories/5/directories/struct.ProjectDirs.html#method.config_dir.
-    #[arg(short = 'c', long = "config", value_name = "PATH")]
+    #[arg(short = 'c', long = "config", value_name = "PATH", global = true)]
     pub config_path: Option<PathBuf>,
 
     /// Manually select a profile to operate on.
     ///
     /// You can also specify a default profile in the config file.
-    #[arg(short = 'p', long = "profile", value_name = "NAME")]
+    #[arg(short = 'p', long = "profile", value_name = "NAME", global = true)]
     pub profile: Option<String>,
 
     /// Do not run post-action scripts.
-    #[arg(long = "no-post-action-scripts", visible_aliases = ["no-post-scripts"])]
+    #[arg(long = "no-post-action-scripts", visible_aliases = ["no-post-scripts"], global = true)]
     pub no_post_action_scripts: bool,
 
     #[command(subcommand)]
