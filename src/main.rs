@@ -51,7 +51,7 @@ fn main() -> color_eyre::Result<()> {
     };
 
     // handle config init
-    if let Action::InitConfig = action {
+    if let Action::InitConfig = &action {
         init_config(&config_path)
             .wrap_err_with(|| format!("Failed to initialise config {config_path:?}"))?;
         return Ok(());
@@ -68,12 +68,12 @@ fn main() -> color_eyre::Result<()> {
     let profile_name = &profile.name;
 
     // other actions
-    match action {
+    match &action {
         Action::InitConfig => unreachable!(), // already handled
         Action::List => list_users(config_dir, profile)
             .wrap_err_with(|| format!(r#"Failed to list users of profile "{profile_name}""#))?,
         Action::NewUser { usernames, days } => {
-            new_user(config_dir, &config, profile, &usernames, days).wrap_err_with(|| {
+            new_user(config_dir, &config, profile, &usernames, *days).wrap_err_with(|| {
                 format!(r#"Failed while adding users to profile "{profile_name}""#)
             })?
         }
@@ -84,12 +84,12 @@ fn main() -> color_eyre::Result<()> {
         }
         Action::PackageFor { usernames, add_prefix, output_dir } => {
             let output_dir = match output_dir {
-                Some(dir) => dir,
+                Some(dir) => dir.to_owned(),
                 None => env::current_dir().wrap_err(
                     "No output directory specified, and failed to get current working directory",
                 )?,
             };
-            package(config_dir, profile, &usernames, add_prefix, output_dir).wrap_err_with(
+            package(config_dir, profile, &usernames, *add_prefix, output_dir).wrap_err_with(
                 || format!(r#"Failed while packaging users of profile "{profile_name}""#),
             )?;
         }
