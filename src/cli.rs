@@ -53,7 +53,11 @@ pub enum Action {
     ///
     /// If `config_path` is not specified, the default location is used.
     #[command(visible_aliases = ["init"])]
-    InitConfig,
+    InitConfig {
+        /// Allow overwriting an existing file.
+        #[arg(short = 'f', long = "force")]
+        force: bool,
+    },
 
     /// List all valid certificates.
     #[command(visible_aliases = ["ls"])]

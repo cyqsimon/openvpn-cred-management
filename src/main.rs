@@ -51,8 +51,8 @@ fn main() -> color_eyre::Result<()> {
     };
 
     // handle config init
-    if let Action::InitConfig = &action {
-        init_config(&config_path)
+    if let Action::InitConfig { force } = &action {
+        init_config(&config_path, *force)
             .wrap_err_with(|| format!("Failed to initialise config {config_path:?}"))?;
         return Ok(());
     }
@@ -69,7 +69,7 @@ fn main() -> color_eyre::Result<()> {
 
     // other actions
     match &action {
-        Action::InitConfig => unreachable!(), // already handled
+        Action::InitConfig { .. } => unreachable!(), // already handled
         Action::List => list_users(config_dir, profile)
             .wrap_err_with(|| format!(r#"Failed to list users of profile "{profile_name}""#))?,
         Action::NewUser { usernames, days } => {

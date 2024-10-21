@@ -2,6 +2,7 @@ mod shared;
 
 use std::{
     fs::{self, File},
+    io::Write,
     path::Path,
 };
 
@@ -22,7 +23,7 @@ use crate::{
     types::Username,
 };
 
-pub fn init_config(config_path: impl AsRef<Path>) -> color_eyre::Result<()> {
+pub fn init_config(config_path: impl AsRef<Path>, allow_overwrite: bool) -> color_eyre::Result<()> {
     let config_path = config_path.as_ref();
 
     // create parent dir
@@ -36,7 +37,16 @@ pub fn init_config(config_path: impl AsRef<Path>) -> color_eyre::Result<()> {
     let config = Config::example()
         .as_annotated_toml()
         .wrap_err("Cannot annotate the default config")?;
-    fs::write(config_path, config.to_string())
+
+    // write
+    let mut config_file = if allow_overwrite {
+        File::create(config_path)
+    } else {
+        File::create_new(config_path)
+    }
+    .wrap_err_with(|| format!("Cannot create new config file {config_path:?}"))?;
+    config_file
+        .write_all(config.to_string().as_bytes())
         .wrap_err_with(|| format!("Failed to write config file to {config_path:?}"))?;
     info!("Created example config file at {config_path:?}");
 
