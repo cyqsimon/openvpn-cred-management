@@ -33,10 +33,10 @@ pub fn init_config(config_path: impl AsRef<Path>) -> color_eyre::Result<()> {
     info!("Created directory {parent:?}");
 
     // create config
-    let config = Config::example();
-    let config_str =
-        toml::to_string_pretty(&config).wrap_err("Serialisation of default config failed")?;
-    fs::write(config_path, config_str)
+    let config = Config::example()
+        .as_annotated_toml()
+        .wrap_err("Cannot annotate the default config")?;
+    fs::write(config_path, config.to_string())
         .wrap_err_with(|| format!("Failed to write config file to {config_path:?}"))?;
     info!("Created example config file at {config_path:?}");
 

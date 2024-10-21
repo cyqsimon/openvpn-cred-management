@@ -9,6 +9,7 @@ clap-verbosity-flag = "2.2.2"
 color-eyre = "0.6.3"
 derive_more = { version = "1.0.0", features = ["deref", "display"] }
 directories = "5.0.1"
+documented = "0.8.0"
 fs-more = "0.7.1"
 itertools = "0.13.0"
 log = "0.4.22"
@@ -18,7 +19,7 @@ serde_with = "3.10.0"
 simplelog = "0.12.2"
 strum = { version = "0.26.3", features = ["derive"] }
 temp-dir = "0.1.14"
-toml = "0.8.19"
+toml_edit = { version = "0.22.22", features = ["serde"] }
 xshell = "0.2.6"
 zip = "2.2.0"
 zip-extensions = "0.8.1"

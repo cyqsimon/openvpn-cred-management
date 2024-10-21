@@ -50,6 +50,19 @@ impl Default for CustomScriptsMap {
     }
 }
 impl CustomScriptsMap {
+    /// Return an example map.
+    pub fn example() -> Self {
+        let mut map = Self::default();
+
+        // insert example scripts
+        map.0
+            .entry(ActionType::List)
+            .or_default()
+            .push("echo 'Never play f6' >/dev/stderr".into());
+
+        map
+    }
+
     /// Run all custom scripts defined for a type of action.
     ///
     /// The scripts are run in the current working directory.

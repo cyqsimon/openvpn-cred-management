@@ -5,8 +5,10 @@ use std::{
 
 use color_eyre::eyre::{bail, eyre, Context, OptionExt};
 use directories::ProjectDirs;
+use documented::{Documented, DocumentedFields};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use toml_edit::{ArrayOfTables, Decor, DocumentMut, RawString, Table};
 
 use crate::types::CustomScriptsMap;
 
@@ -46,8 +48,10 @@ impl AsRef<Path> for RelativePathBuf {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+/// Options related to the `package-for` subcommand.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Documented, DocumentedFields)]
 #[serde(rename_all = "kebab-case")]
+#[documented_fields(rename_all = "kebab-case")]
 pub struct Packaging {
     /// The skeleton directory that contains files to be included in all packages.
     ///
@@ -67,8 +71,10 @@ pub struct Packaging {
     pub key_subpath: RelativePathBuf,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+/// Define a single profile.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Documented, DocumentedFields)]
 #[serde(rename_all = "kebab-case")]
+#[documented_fields(rename_all = "kebab-case")]
 pub struct Profile {
     /// The identifier of the profile.
     pub name: String,
@@ -86,8 +92,10 @@ pub struct Profile {
     pub post_action_scripts: Option<CustomScriptsMap>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+/// The whole configuration.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Documented, DocumentedFields)]
 #[serde(try_from = "ConfigValidator", rename_all = "kebab-case")]
+#[documented_fields(rename_all = "kebab-case")]
 pub struct Config {
     /// The path to the EasyRSA executable.
     pub easy_rsa_path: PathBuf,
@@ -96,6 +104,8 @@ pub struct Config {
     pub default_profile: Option<String>,
 
     /// The list of known profiles.
+    #[serde(rename = "profile")]
+    #[documented_fields(rename = "profile")]
     pub profiles: Vec<Profile>,
 }
 impl Config {
@@ -126,7 +136,7 @@ impl Config {
             name: "example".into(),
             easy_rsa_pki_dir: "/etc/openvpn/server/example.auth.d/".into(),
             packaging: Some(packaging),
-            post_action_scripts: Some(Default::default()),
+            post_action_scripts: Some(CustomScriptsMap::example()),
         };
 
         Self {
@@ -136,13 +146,47 @@ impl Config {
         }
     }
 
+    /// Create an annotated TOML document by inserting documentation.
+    pub fn as_annotated_toml(&self) -> color_eyre::Result<DocumentMut> {
+        let mut toml = toml_edit::ser::to_string_pretty(self)?.parse::<DocumentMut>()?;
+
+        // annotate `Config`
+        annotate_toml_table::<Config>(toml.as_table_mut(), true)
+            .wrap_err("Failed to annotate `Config`")?;
+
+        // annotate `Profile`
+        let Some(profiles) = toml.get_mut("profile") else {
+            return Ok(toml); // could be no profiles
+        };
+        let Some(profiles) = profiles.as_array_of_tables_mut() else {
+            unreachable!("`profile` is not an array of tables");
+        };
+        annotate_toml_array_of_tables::<Profile>(profiles)
+            .wrap_err("Failed to annotate `Profile`")?;
+
+        // annotate `Packaging`
+        for (i, profile) in profiles.iter_mut().enumerate() {
+            let Some(packaging) = profile.get_mut("packaging") else {
+                continue; // could be no packaging section
+            };
+            let Some(packaging) = packaging.as_table_mut() else {
+                unreachable!("`packaging` is not a table");
+            };
+            annotate_toml_table::<Packaging>(packaging, false)
+                .wrap_err_with(|| format!("Failed to annotate `Packaging` #{i}"))?;
+        }
+
+        Ok(toml)
+    }
+
     /// Load the config from the specified path.
     pub fn load_from(config_path: impl AsRef<Path>) -> color_eyre::Result<Config> {
         let config_path = config_path.as_ref();
 
         let config_str = fs::read_to_string(config_path)
             .wrap_err_with(|| format!("Cannot read config file {config_path:?}"))?;
-        let config = toml::from_str(&config_str)
+
+        let config = toml_edit::de::from_str(&config_str)
             .wrap_err_with(|| format!("Deserialising config file {config_path:?} failed"))?;
 
         Ok(config)
@@ -186,4 +230,84 @@ impl TryFrom<ConfigValidator> for Config {
 
         Ok(Self { easy_rsa_path, default_profile, profiles })
     }
+}
+
+/// Insert annotations as comments into the serialised TOML representation of a
+/// type using its doc comments.
+///
+/// Note that this function is not recursive. We do not descend into sub-tables
+/// and sub-arrays-of-tables and annotate their fields; we only annotate the
+/// sub-table or sub-arrays-of-tables themselves with the doc comments of their
+/// corresponding fields on this type.
+fn annotate_toml_table<T>(table: &mut Table, is_root: bool) -> color_eyre::Result<()>
+where
+    T: Documented + DocumentedFields,
+{
+    use toml_edit::Item as I;
+
+    fn append_docs_as_toml_comments(decor: &mut Decor, docs: &str) {
+        let old_prefix = decor.prefix().and_then(RawString::as_str);
+        let last_line = old_prefix.and_then(|prefix| prefix.lines().last());
+
+        let comments = docs
+            .lines()
+            .map(|l| if l.is_empty() { "#\n".into() } else { format!("# {l}\n") })
+            .collect();
+
+        let new_prefix = match (old_prefix, last_line) {
+            // no prior comments
+            (None | Some(""), None) => comments,
+            // no prior comments, but somehow there are lines
+            (None, Some(_)) => unreachable!(),
+            // prior comments is contentful, but there are no lines
+            (Some(_), None) => unreachable!(),
+            // last line of prior comments is empty
+            (Some(prefix), Some("")) => format!("{prefix}{comments}"),
+            // last line of prior comments is contentful
+            (Some(prefix), Some(_)) => format!("{prefix}#\n{comments}"),
+        };
+        decor.set_prefix(new_prefix);
+    }
+
+    // docs on this container
+    if !is_root {
+        append_docs_as_toml_comments(table.decor_mut(), T::DOCS);
+    }
+
+    // docs on fields
+    for (mut key, value) in table.iter_mut() {
+        // extract docs
+        let field_name = key.get();
+        let Ok(docs) = T::get_field_docs(&field_name) else {
+            continue; // could be `None` and therefore not serialised`
+        };
+
+        // add comments
+        match value {
+            I::None => bail!("Encountered a `None` key unexpectedly"),
+            I::Value(_) => append_docs_as_toml_comments(key.leaf_decor_mut(), docs),
+            I::Table(sub_table) => append_docs_as_toml_comments(sub_table.decor_mut(), docs),
+            I::ArrayOfTables(array) => {
+                let first_table = array
+                    .iter_mut()
+                    .next()
+                    .expect("Array of table should not be empty");
+                append_docs_as_toml_comments(first_table.decor_mut(), docs);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Same as [`annotate_toml_table`], but annotate every table in the array.
+fn annotate_toml_array_of_tables<T>(array: &mut ArrayOfTables) -> color_eyre::Result<()>
+where
+    T: Documented + DocumentedFields,
+{
+    for (i, table) in array.iter_mut().enumerate() {
+        annotate_toml_table::<T>(table, false)
+            .wrap_err_with(|| format!("Failed to annotate table {i}"))?;
+    }
+    Ok(())
 }
