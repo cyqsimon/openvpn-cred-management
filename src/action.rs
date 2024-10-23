@@ -186,6 +186,8 @@ pub fn package(
         symlink_behaviour: SymlinkBehaviour::Follow,
         ..Default::default()
     };
+    // BUG: `fs_more::directory::copy_directory` mishandles relative symlinks
+    // see https://github.com/simongoricar/fs-more/issues/3
     copy_directory(&skel_dir, &mapped_skel_dir, copy_options).wrap_err_with(|| {
         format!("Failed to copy skeleton directory {skel_dir:?} to {mapped_skel_dir:?}")
     })?;
