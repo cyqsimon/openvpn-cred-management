@@ -101,5 +101,10 @@ pub enum Action {
         /// Output to a directory other than the current working directory.
         #[arg(short = 'o', long = "output-dir", value_name = "DIR")]
         output_dir: Option<PathBuf>,
+
+        /// Keep temporary intermediate artifacts instead of deleting them.
+        /// Helpful for debugging.
+        #[arg(long = "keep-temp")]
+        keep_temp: bool,
     },
 }

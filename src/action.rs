@@ -148,6 +148,7 @@ pub fn package(
     usernames: &[Username],
     add_prefix: bool,
     output_dir: impl AsRef<Path>,
+    keep_temp: bool,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
     let profile_name = &profile.name;
@@ -169,10 +170,17 @@ pub fn package(
     // allow `skel_dir` to be relative to the config file
     let skel_dir = config_dir.join(&packaging.skel_dir);
 
-    // copy skeleton directory
+    // create temporary directory
     let temp_dir = TempDir::with_prefix("openvpn-cred-management-")
         .wrap_err("Cannot create temporary working directory")?;
-    let mapped_skel_dir = temp_dir.path().join("mapped-skel");
+    let temp_dir_path = temp_dir.path().to_owned();
+    if keep_temp {
+        info!("Skipping cleanup of temporary directory {temp_dir_path:?}");
+        temp_dir.leak();
+    }
+
+    // copy skeleton directory
+    let mapped_skel_dir = temp_dir_path.join("mapped-skel");
     let copy_options = DirectoryCopyOptions {
         copy_depth_limit: DirectoryCopyDepthLimit::Limited { maximum_depth: 64 },
         symlink_behaviour: SymlinkBehaviour::Follow,
@@ -193,7 +201,7 @@ pub fn package(
     drop(sh);
 
     // create parent dir for individual packages
-    let pkg_parent_dir = temp_dir.path().join("pkgs");
+    let pkg_parent_dir = temp_dir_path.join("pkgs");
     fs::create_dir_all(&pkg_parent_dir).wrap_err_with(|| {
         format!("Failed to create packages' parent directory {pkg_parent_dir:?}")
     })?;
@@ -255,9 +263,6 @@ pub fn package(
             .create_from_directory(&pkg_dir)
             .wrap_err_with(|| format!(r#"Failed while writing into "{archive_name}""#))?;
     }
-
-    // cleanup only after everything is done
-    drop(temp_dir);
 
     Ok(())
 }

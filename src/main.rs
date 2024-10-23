@@ -82,16 +82,29 @@ fn main() -> color_eyre::Result<()> {
                 || format!(r#"Failed while removing users from profile "{profile_name}""#),
             )?
         }
-        Action::PackageFor { usernames, add_prefix, output_dir } => {
+        Action::PackageFor {
+            usernames,
+            add_prefix,
+            output_dir,
+            keep_temp,
+        } => {
             let output_dir = match output_dir {
                 Some(dir) => dir.to_owned(),
                 None => env::current_dir().wrap_err(
                     "No output directory specified, and failed to get current working directory",
                 )?,
             };
-            package(config_dir, profile, &usernames, *add_prefix, output_dir).wrap_err_with(
-                || format!(r#"Failed while packaging users of profile "{profile_name}""#),
-            )?;
+            package(
+                config_dir,
+                profile,
+                &usernames,
+                *add_prefix,
+                output_dir,
+                *keep_temp,
+            )
+            .wrap_err_with(|| {
+                format!(r#"Failed while packaging users of profile "{profile_name}""#)
+            })?;
         }
     }
 
