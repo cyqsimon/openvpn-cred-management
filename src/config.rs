@@ -211,6 +211,7 @@ impl Config {
 struct ConfigValidator {
     easy_rsa_path: PathBuf,
     default_profile: Option<String>,
+    #[serde(rename = "profile")]
     profiles: Vec<Profile>,
 }
 impl TryFrom<ConfigValidator> for Config {
