@@ -14,7 +14,7 @@ fs-more = "0.7.1"
 itertools = "0.13.0"
 log = "0.4.22"
 regex = "1.11.0"
-serde = { version = "1.0.210", features = ["derive"] }
+serde = { version = "1.0.213", features = ["derive"] }
 serde_with = "3.11.0"
 simplelog = "0.12.2"
 strum = { version = "0.26.3", features = ["derive"] }
