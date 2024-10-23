@@ -53,7 +53,8 @@ impl AsRef<Path> for RelativePathBuf {
 #[serde(rename_all = "kebab-case")]
 #[documented_fields(rename_all = "kebab-case")]
 pub struct Packaging {
-    /// The skeleton directory that contains files to be included in all packages.
+    /// The skeleton directory that contains files to be included in all packages,
+    /// relative to the location of this config file (if relative).
     ///
     /// Any contained symlinks will be followed.
     pub skel_dir: PathBuf,
