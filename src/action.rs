@@ -256,5 +256,8 @@ pub fn package(
             .wrap_err_with(|| format!(r#"Failed while writing into "{archive_name}""#))?;
     }
 
+    // cleanup only after everything is done
+    drop(temp_dir);
+
     Ok(())
 }
