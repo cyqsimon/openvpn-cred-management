@@ -1,4 +1,5 @@
 use std::{
+    any::type_name,
     fs,
     path::{Path, PathBuf},
 };
@@ -7,6 +8,7 @@ use color_eyre::eyre::{bail, eyre, Context, OptionExt};
 use directories::ProjectDirs;
 use documented::{Documented, DocumentedFields};
 use itertools::Itertools;
+use log::warn;
 use serde::{Deserialize, Serialize};
 use toml_edit::{ArrayOfTables, Decor, DocumentMut, RawString, Table};
 
@@ -281,7 +283,10 @@ where
         // extract docs
         let field_name = key.get();
         let Ok(docs) = T::get_field_docs(&field_name) else {
-            continue; // could be `None` and therefore not serialised`
+            // ignore fields not known to `T`
+            let ty = type_name::<T>();
+            warn!("Encountered an unknown field `{field_name}` while annotating `{ty}`");
+            continue;
         };
 
         // add comments
