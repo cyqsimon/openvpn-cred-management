@@ -95,7 +95,7 @@ pub enum Action {
         usernames: Vec<Username>,
 
         /// Add the profile name as a prefix to the package name.
-        #[arg(short = 'p', long = "add-prefix")]
+        #[arg(long = "add-prefix", visible_aliases = ["pre"])]
         add_prefix: bool,
 
         /// Output to a directory other than the current working directory.
