@@ -23,6 +23,7 @@ Not tested whatsoever so you probably shouldn't use it.
 curl -Lf "https://sh.rustup.rs" | sh -s -- --profile minimal -y
 
 %build
+source ~/.cargo/env
 cargo build --release
 
 %install
