@@ -3,9 +3,9 @@ mod cli;
 mod config;
 mod types;
 
-use std::{env, path::Path};
+use std::{env, io, path::Path};
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use color_eyre::eyre::{bail, Context};
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
@@ -41,6 +41,16 @@ fn main() -> color_eyre::Result<()> {
     )
     .wrap_err("Failed to initialise logger")?;
 
+    // handle completion generation
+    if let Action::Complete { shell } = &action {
+        let Some(shell) = shell.or_else(clap_complete::Shell::from_env) else {
+            bail!("Failed to determine your shell; please specify one manually.")
+        };
+        let mut cmd = CliArgs::command();
+        clap_complete::generate(shell, &mut cmd, "ocm", &mut io::stdout());
+        return Ok(());
+    }
+
     // get config path
     let config_path = match config_path {
         Some(p) => p,
@@ -72,6 +82,7 @@ fn main() -> color_eyre::Result<()> {
 
     // other actions
     match &action {
+        Action::Complete { .. } => unreachable!(), // already handled
         Action::InitConfig { .. } => unreachable!(), // already handled
         Action::ListProfiles => {
             list_profiles(&config, profile).wrap_err("Failed to list known profiles")?
@@ -87,10 +98,11 @@ fn main() -> color_eyre::Result<()> {
                 })?
             }
         }
-        Action::NewUser { usernames, days } => new_user(
-            config_dir, &config, profile, usernames, *days, force,
-        )
-        .wrap_err_with(|| format!(r#"Failed while adding users to profile "{profile_name}""#))?,
+        Action::NewUser { usernames, days } => {
+            new_user(config_dir, &config, profile, usernames, *days, force).wrap_err_with(|| {
+                format!(r#"Failed while adding users to profile "{profile_name}""#)
+            })?
+        }
         Action::RmUser { usernames, no_update_crl } => remove_user(
             config_dir,
             &config,

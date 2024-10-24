@@ -25,10 +25,23 @@ curl -Lf "https://sh.rustup.rs" | sh -s -- --profile minimal -y
 
 %build
 source ~/.cargo/env
+
+# bin
 cargo build --release
 
+# completions
+for SHELL in bash zsh fish; do
+    /target/release/%{_bin_name} complete --shell $SHELL > "%{_bin_name}.$SHELL"
+done
+
 %install
+# bin
 install -Dpm 755 target/release/%{_bin_name} %{buildroot}%{_bindir}/%{_bin_name}
+
+# completions
+install -Dpm 644 %{_bin_name}.bash %{buildroot}%{_datadir}/bash-completion/completions/%{_bin_name}
+install -Dpm 644 %{_bin_name}.zsh %{buildroot}%{_datadir}/zsh/site-functions/_%{_bin_name}
+install -Dpm 644 %{_bin_name}.fish %{buildroot}%{_datadir}/fish/completions/%{_bin_name}.fish
 
 %files
 %license LICENSE

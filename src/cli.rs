@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueHint};
+use clap_complete::Shell;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +14,7 @@ pub struct CliArgs {
     ///
     /// Defaults to the OS-dependent project config directory for `net.scheimong/openvpn-cred-management`.
     /// See https://docs.rs/directories/5/directories/struct.ProjectDirs.html#method.config_dir.
-    #[arg(short = 'c', long = "config", value_name = "PATH", global = true)]
+    #[arg(short = 'c', long = "config", value_name = "PATH", value_hint = ValueHint::FilePath, global = true)]
     pub config_path: Option<PathBuf>,
 
     /// Manually select a profile to operate on.
@@ -53,6 +54,13 @@ pub struct CliArgs {
     serde(rename_all = "kebab-case")
 )]
 pub enum Action {
+    /// Generate shell completion to stdout.
+    Complete {
+        /// Specify the shell to generate completion for.
+        #[arg(index = 1, value_name = "KIND")]
+        shell: Option<Shell>,
+    },
+
     /// Initialise a config file.
     ///
     /// If `config_path` is not specified, the default location is used.
@@ -107,7 +115,7 @@ pub enum Action {
         add_prefix: bool,
 
         /// Output to a directory other than the current working directory.
-        #[arg(short = 'o', long = "output-dir", value_name = "DIR")]
+        #[arg(short = 'o', long = "output-dir", value_name = "DIR", value_hint = ValueHint::DirPath)]
         output_dir: Option<PathBuf>,
 
         /// Keep temporary intermediate artifacts instead of deleting them.
