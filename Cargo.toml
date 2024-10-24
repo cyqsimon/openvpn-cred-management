@@ -1,5 +1,6 @@
 [package]
 name = "openvpn-cred-management"
+description = "A wrapper around easy-rsa for personal convenience."
 edition = "2021"
 publish = false
 

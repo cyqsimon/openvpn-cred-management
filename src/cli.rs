@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::Username;
 
 #[derive(Clone, Debug, Parser)]
-#[command(author, version)]
+#[command(author, about, version)]
 pub struct CliArgs {
     /// Path to the configuration file.
     ///
