@@ -195,8 +195,11 @@ impl Config {
         Ok(config)
     }
 
-    /// Get the profile with the given name.
-    pub fn get_profile(&self, name: Option<impl AsRef<str>>) -> color_eyre::Result<&Profile> {
+    /// Get the profile with the given name, or get the default profile if `None`.
+    pub fn get_profile_or_default(
+        &self,
+        name: Option<impl AsRef<str>>,
+    ) -> color_eyre::Result<&Profile> {
         let name = name
             .as_ref()
             .map(AsRef::as_ref)

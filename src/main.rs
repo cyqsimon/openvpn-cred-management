@@ -63,7 +63,7 @@ fn main() -> color_eyre::Result<()> {
 
     // get profile
     let profile = config
-        .get_profile(profile)
+        .get_profile_or_default(profile)
         .wrap_err("Cannot select a profile")?;
     let profile_name = &profile.name;
 
