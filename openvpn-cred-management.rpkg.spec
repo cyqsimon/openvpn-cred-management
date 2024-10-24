@@ -31,7 +31,7 @@ cargo build --release
 
 # completions
 for SHELL in bash zsh fish; do
-    /target/release/%{_bin_name} complete --shell $SHELL > "%{_bin_name}.$SHELL"
+    target/release/%{_bin_name} complete $SHELL > "%{_bin_name}.$SHELL"
 done
 
 %install
@@ -46,6 +46,9 @@ install -Dpm 644 %{_bin_name}.fish %{buildroot}%{_datadir}/fish/completions/%{_b
 %files
 %license LICENSE
 %{_bindir}/%{_bin_name}
+%{_datadir}/bash-completion/completions/%{_bin_name}
+%{_datadir}/zsh/site-functions/_%{_bin_name}
+%{_datadir}/fish/completions/%{_bin_name}.fish
 
 %changelog
 {{{ git_dir_changelog }}}
