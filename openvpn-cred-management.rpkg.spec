@@ -1,4 +1,5 @@
 %global debug_package %{nil}
+%global _bin_name ocm
 
 Name:       {{{ git_dir_name }}}
 Version:    {{{ git_dir_version }}}
@@ -27,11 +28,11 @@ source ~/.cargo/env
 cargo build --release
 
 %install
-install -Dpm 755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
+install -Dpm 755 target/release/%{_bin_name} %{buildroot}%{_bindir}/%{_bin_name}
 
 %files
 %license LICENSE
-%{_bindir}/%{name}
+%{_bindir}/%{_bin_name}
 
 %changelog
 {{{ git_dir_changelog }}}

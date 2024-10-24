@@ -3,6 +3,10 @@ name = "openvpn-cred-management"
 edition = "2021"
 publish = false
 
+[[bin]]
+name = "ocm"
+path = "src/main.rs"
+
 [dependencies]
 chrono = "0.4.38"
 clap = { version = "4.5.20", features = ["derive", "cargo"] }
