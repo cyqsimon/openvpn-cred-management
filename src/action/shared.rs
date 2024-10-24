@@ -176,13 +176,15 @@ pub fn regenerate_crl(
     config_dir: impl AsRef<Path>,
     config: &Config,
     profile: &Profile,
+    force: bool,
 ) -> color_eyre::Result<()> {
     let easy_rsa = &config.easy_rsa_path;
+    let force_arg = force.then_some("--batch");
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
 
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
-    cmd!(sh, "{easy_rsa} --batch --pki-dir={pki_dir} gen-crl")
+    cmd!(sh, "{easy_rsa} {force_arg...} --pki-dir={pki_dir} gen-crl")
         .run()
         .wrap_err("CRL regenerate command failed to execute")?;
 

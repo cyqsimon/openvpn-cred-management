@@ -105,6 +105,7 @@ pub fn new_user(
     profile: &Profile,
     usernames: &[Username],
     days: Option<usize>,
+    force: bool,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
     let profile_name = &profile.name;
@@ -119,6 +120,7 @@ pub fn new_user(
     }
 
     let easy_rsa = &config.easy_rsa_path;
+    let force_arg = force.then_some("--batch");
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
     let days_arg = days.map(|d| format!("--days={d}"));
@@ -128,7 +130,7 @@ pub fn new_user(
     for username in usernames {
         cmd!(
             sh,
-            "{easy_rsa} --batch --pki-dir={pki_dir} --no-pass {days_arg...} build-client-full {username}"
+            "{easy_rsa} {force_arg...} --pki-dir={pki_dir} --no-pass {days_arg...} build-client-full {username}"
         )
         .run().wrap_err("User creation command failed to execute")?;
     }
@@ -142,6 +144,7 @@ pub fn remove_user(
     profile: &Profile,
     usernames: &[Username],
     update_crl: bool,
+    force: bool,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
     let profile_name = &profile.name;
@@ -155,6 +158,7 @@ pub fn remove_user(
     }
 
     let easy_rsa = &config.easy_rsa_path;
+    let force_arg = force.then_some("--batch");
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
 
@@ -162,14 +166,14 @@ pub fn remove_user(
     for username in usernames {
         cmd!(
             sh,
-            "{easy_rsa} --batch --pki-dir={pki_dir} revoke {username}"
+            "{easy_rsa} {force_arg...} --pki-dir={pki_dir} revoke {username}"
         )
         .run()
         .wrap_err("User deletion command failed to execute")?;
     }
 
     if update_crl {
-        regenerate_crl(config_dir, config, profile)?;
+        regenerate_crl(config_dir, config, profile, force)?;
     }
 
     Ok(())
@@ -181,6 +185,7 @@ pub fn package(
     usernames: &[Username],
     add_prefix: bool,
     output_dir: impl AsRef<Path>,
+    force: bool,
     keep_temp: bool,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
@@ -291,8 +296,13 @@ pub fn package(
         } else {
             format!("{username}.zip")
         };
-        let zip_file = File::create_new(output_dir.join(&archive_name))
-            .wrap_err_with(|| format!(r#"Failed to create "{archive_name}" for output"#))?;
+        let output_path = output_dir.join(&archive_name);
+        let zip_file = if force {
+            File::create(&output_path)
+        } else {
+            File::create_new(&output_path)
+        }
+        .wrap_err_with(|| format!(r#"Failed to create {output_path:?} for output"#))?;
         let zip_writer = ZipWriter::new(zip_file);
         zip_writer
             .create_from_directory(&pkg_dir)

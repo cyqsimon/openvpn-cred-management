@@ -22,6 +22,10 @@ pub struct CliArgs {
     #[arg(short = 'p', long = "profile", value_name = "NAME", global = true)]
     pub profile: Option<String>,
 
+    /// Proceed with potentially destructive actions automatically without confirmation.
+    #[arg(short = 'f', long = "force", global = true)]
+    pub force: bool,
+
     /// Do not run post-action scripts.
     #[arg(long = "no-post-action-scripts", visible_aliases = ["no-post-scripts"], global = true)]
     pub no_post_action_scripts: bool,
@@ -53,11 +57,7 @@ pub enum Action {
     ///
     /// If `config_path` is not specified, the default location is used.
     #[command(visible_aliases = ["init"])]
-    InitConfig {
-        /// Allow overwriting an existing file.
-        #[arg(short = 'f', long = "force")]
-        force: bool,
-    },
+    InitConfig,
 
     /// List all known profiles.
     #[command(visible_aliases = ["profiles"])]

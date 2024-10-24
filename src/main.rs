@@ -25,6 +25,7 @@ fn main() -> color_eyre::Result<()> {
     let CliArgs {
         config_path,
         profile,
+        force,
         no_post_action_scripts,
         action,
         verbosity,
@@ -53,8 +54,8 @@ fn main() -> color_eyre::Result<()> {
     };
 
     // handle config init
-    if let Action::InitConfig { force } = &action {
-        init_config(&config_path, *force)
+    if let Action::InitConfig = &action {
+        init_config(&config_path, force)
             .wrap_err_with(|| format!("Failed to initialise config {config_path:?}"))?;
         return Ok(());
     }
@@ -86,16 +87,21 @@ fn main() -> color_eyre::Result<()> {
                 })?
             }
         }
-        Action::NewUser { usernames, days } => {
-            new_user(config_dir, &config, profile, &usernames, *days).wrap_err_with(|| {
-                format!(r#"Failed while adding users to profile "{profile_name}""#)
-            })?
-        }
-        Action::RmUser { usernames, no_update_crl } => {
-            remove_user(config_dir, &config, profile, &usernames, !no_update_crl).wrap_err_with(
-                || format!(r#"Failed while removing users from profile "{profile_name}""#),
-            )?
-        }
+        Action::NewUser { usernames, days } => new_user(
+            config_dir, &config, profile, &usernames, *days, force,
+        )
+        .wrap_err_with(|| format!(r#"Failed while adding users to profile "{profile_name}""#))?,
+        Action::RmUser { usernames, no_update_crl } => remove_user(
+            config_dir,
+            &config,
+            profile,
+            &usernames,
+            !no_update_crl,
+            force,
+        )
+        .wrap_err_with(|| {
+            format!(r#"Failed while removing users from profile "{profile_name}""#)
+        })?,
         Action::PackageFor {
             usernames,
             add_prefix,
@@ -114,6 +120,7 @@ fn main() -> color_eyre::Result<()> {
                 &usernames,
                 *add_prefix,
                 output_dir,
+                force,
                 *keep_temp,
             )
             .wrap_err_with(|| {
