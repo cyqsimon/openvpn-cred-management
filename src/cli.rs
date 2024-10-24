@@ -59,6 +59,10 @@ pub enum Action {
         force: bool,
     },
 
+    /// List all known profiles.
+    #[command(visible_aliases = ["profiles"])]
+    ListProfiles,
+
     /// List all valid certificates.
     #[command(visible_aliases = ["ls"])]
     List,

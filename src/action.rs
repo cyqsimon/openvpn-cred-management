@@ -53,6 +53,26 @@ pub fn init_config(config_path: impl AsRef<Path>, allow_overwrite: bool) -> colo
     Ok(())
 }
 
+pub fn list_profiles(config: &Config, active: &Profile) -> color_eyre::Result<()> {
+    let output = config
+        .profiles
+        .iter()
+        .map(|p| {
+            let name = &p.name;
+            let is_active = p == active;
+            let is_default = config.default_profile.as_ref().is_some_and(|dp| name == dp);
+            match (is_active, is_default) {
+                (true, true) => format!("{name} (active, default)"),
+                (true, false) => format!("{name} (active)"),
+                (false, true) => format!("{name} (default)"),
+                (false, false) => format!("{name}"),
+            }
+        })
+        .join("\n");
+    println!("{output}");
+    Ok(())
+}
+
 pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre::Result<()> {
     let profile_name = &profile.name;
 
