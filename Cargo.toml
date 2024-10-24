@@ -4,6 +4,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+chrono = "0.4.38"
 clap = { version = "4.5.20", features = ["derive", "cargo"] }
 clap-verbosity-flag = "2.2.2"
 color-eyre = "0.6.3"

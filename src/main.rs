@@ -10,7 +10,9 @@ use color_eyre::eyre::{bail, Context};
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
-    action::{init_config, list_profiles, list_users, new_user, package, remove_user},
+    action::{
+        init_config, list_expired, list_profiles, list_users, new_user, package, remove_user,
+    },
     cli::{Action, ActionType, CliArgs},
     config::{default_config_path, Config},
 };
@@ -73,8 +75,17 @@ fn main() -> color_eyre::Result<()> {
         Action::ListProfiles => {
             list_profiles(&config, profile).wrap_err("Failed to list known profiles")?
         }
-        Action::List => list_users(config_dir, profile)
-            .wrap_err_with(|| format!(r#"Failed to list users of profile "{profile_name}""#))?,
+        Action::List { only_expired } => {
+            if *only_expired {
+                list_expired(config_dir, &config, profile).wrap_err_with(|| {
+                    format!(r#"Failed to list expired users of profile "{profile_name}""#)
+                })?
+            } else {
+                list_users(config_dir, profile).wrap_err_with(|| {
+                    format!(r#"Failed to list users of profile "{profile_name}""#)
+                })?
+            }
+        }
         Action::NewUser { usernames, days } => {
             new_user(config_dir, &config, profile, &usernames, *days).wrap_err_with(|| {
                 format!(r#"Failed while adding users to profile "{profile_name}""#)

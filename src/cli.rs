@@ -63,9 +63,13 @@ pub enum Action {
     #[command(visible_aliases = ["profiles"])]
     ListProfiles,
 
-    /// List all valid certificates.
+    /// List all certificates, with optional filtering.
     #[command(visible_aliases = ["ls"])]
-    List,
+    List {
+        /// Only show expired certificates.
+        #[arg(short = 'e', long = "expired")]
+        only_expired: bool,
+    },
 
     /// Generate a certificate for a new user.
     #[command(visible_aliases = ["new"])]
