@@ -18,7 +18,7 @@ use zip::ZipWriter;
 use zip_extensions::ZipWriterExtensions;
 
 use crate::{
-    action::shared::{get_cert_path, get_expired_users, get_key_path, get_users},
+    action::shared::{get_cert_path, get_expired_users, get_key_path, get_users, regenerate_crl},
     config::{Config, Profile},
     types::Username,
 };
@@ -169,9 +169,7 @@ pub fn remove_user(
     }
 
     if update_crl {
-        cmd!(sh, "{easy_rsa} --batch --pki-dir={pki_dir} gen-crl")
-            .run()
-            .wrap_err("CRL update command failed to execute")?;
+        regenerate_crl(config_dir, config, profile)?;
     }
 
     Ok(())
