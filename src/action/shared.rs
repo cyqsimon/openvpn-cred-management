@@ -4,12 +4,19 @@ use std::{
     ffi::{OsStr, OsString},
     fs,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
+use chrono::{DateTime, Utc};
 use color_eyre::eyre::{eyre, Context};
-use log::warn;
+use log::{debug, warn};
+use regex::Regex;
+use xshell::{cmd, Shell};
 
-use crate::{config::Profile, types::Username};
+use crate::{
+    config::{Config, Profile},
+    types::Username,
+};
 
 pub fn get_users(
     config_dir: impl AsRef<Path>,
@@ -84,6 +91,57 @@ pub fn get_users(
         .collect();
 
     Ok(output)
+}
+
+pub fn get_expired_users(
+    config_dir: impl AsRef<Path>,
+    config: &Config,
+    profile: &Profile,
+) -> color_eyre::Result<Vec<Username>> {
+    let easy_rsa = &config.easy_rsa_path;
+    // allow `easy_rsa_pki_dir` to be relative to the config file
+    let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
+    // any larger and easy-rsa errors
+    const MAX_DAYS: usize = 2912876;
+    let days_arg = format!("--days={MAX_DAYS}");
+
+    let sh = Shell::new().wrap_err("Failed to create subshell")?;
+    let show_expire_output = cmd!(sh, "{easy_rsa} --pki-dir={pki_dir} {days_arg} show-expire")
+        .read()
+        .wrap_err("List expired command failed to execute")?;
+    debug!("`easy-rsa show-expire` output: {show_expire_output}");
+
+    // easy-rsa's output format of each line that describes a certificate
+    static LINE_MATCHER: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"^V \| Serial: ([\dA-F]+) \| Expire(s|d): ([\d\-]+) ([\d:Z+\-]+) \| CN: ([^\s]+)$",
+        )
+        .unwrap()
+    });
+    let now = Utc::now();
+
+    let expired = show_expire_output
+        .lines()
+        .filter_map(|line| {
+            let captures = LINE_MATCHER.captures(line)?;
+
+            let name = {let raw = captures.get(5).unwrap().as_str(); // capture always exists
+                raw.parse::<Username>() .inspect_err(|err| warn!(r#"The username "{raw}" failed parsing; ignoring: {err:?}"#))
+                }.ok()?;
+
+            let expiry = {
+                let date = captures.get(3).unwrap().as_str(); // capture always exists
+                let time = captures.get(4).unwrap().as_str(); // capture always exists
+                DateTime::parse_from_rfc3339(&format!("{date}T{time}")).inspect_err(|_| {
+                    warn!("easy-rsa reported expiry time of `{name}` in an unexpected format: `{date} {time}`")
+                })
+            }
+            .ok()?;
+
+            (now > expiry).then_some(name)
+        }).collect();
+
+    Ok(expired)
 }
 
 pub fn get_cert_path(
