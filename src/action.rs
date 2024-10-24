@@ -65,7 +65,7 @@ pub fn list_profiles(config: &Config, active: &Profile) -> color_eyre::Result<()
                 (true, true) => format!("{name} (active, default)"),
                 (true, false) => format!("{name} (active)"),
                 (false, true) => format!("{name} (default)"),
-                (false, false) => format!("{name}"),
+                (false, false) => name.to_owned(),
             }
         })
         .join("\n");

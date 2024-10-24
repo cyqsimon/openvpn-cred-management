@@ -88,14 +88,14 @@ fn main() -> color_eyre::Result<()> {
             }
         }
         Action::NewUser { usernames, days } => new_user(
-            config_dir, &config, profile, &usernames, *days, force,
+            config_dir, &config, profile, usernames, *days, force,
         )
         .wrap_err_with(|| format!(r#"Failed while adding users to profile "{profile_name}""#))?,
         Action::RmUser { usernames, no_update_crl } => remove_user(
             config_dir,
             &config,
             profile,
-            &usernames,
+            usernames,
             !no_update_crl,
             force,
         )
@@ -117,7 +117,7 @@ fn main() -> color_eyre::Result<()> {
             package(
                 config_dir,
                 profile,
-                &usernames,
+                usernames,
                 *add_prefix,
                 output_dir,
                 force,

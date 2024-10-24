@@ -203,7 +203,7 @@ impl Config {
         let name = name
             .as_ref()
             .map(AsRef::as_ref)
-            .or_else(|| self.default_profile.as_deref())
+            .or(self.default_profile.as_deref())
             .ok_or_eyre("No profile specified")?;
         self.profiles
             .iter()
@@ -228,7 +228,7 @@ impl TryFrom<ConfigValidator> for Config {
 
         // `default_profile` has to reference an existing profile
         if let Some(ref name) = default_profile {
-            if profiles.iter().find(|p| &p.name == name).is_none() {
+            if !profiles.iter().any(|p| &p.name == name) {
                 bail!(
                     r#"The specified default profile "{name}" does not reference a known profile"#
                 )
@@ -285,7 +285,7 @@ where
     for (mut key, value) in table.iter_mut() {
         // extract docs
         let field_name = key.get();
-        let Ok(docs) = T::get_field_docs(&field_name) else {
+        let Ok(docs) = T::get_field_docs(field_name) else {
             // ignore fields not known to `T`
             let ty = type_name::<T>();
             warn!("Encountered an unknown field `{field_name}` while annotating `{ty}`");

@@ -97,7 +97,7 @@ impl TryFrom<CustomScriptsMapValidator> for CustomScriptsMap {
 
         // non-applicable subcommands must not be defined
         for action in [ActionType::InitConfig] {
-            if scripts.get(&action).is_some() {
+            if scripts.contains_key(&action) {
                 bail!(r#"Custom scripts are not supported for the "{action}" subcommand"#);
             }
         }
