@@ -20,7 +20,7 @@ documented = "0.8.0"
 fs-more = "0.8.0"
 itertools = "0.13.0"
 log = "0.4.22"
-regex = "1.11.0"
+regex = "1.11.1"
 serde = { version = "1.0.213", features = ["derive"] }
 serde_with = "3.11.0"
 simplelog = "0.12.2"
