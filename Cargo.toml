@@ -17,7 +17,7 @@ color-eyre = "0.6.3"
 derive_more = { version = "1.0.0", features = ["deref", "display"] }
 directories = "5.0.1"
 documented = "0.8.0"
-fs-more = "0.7.1"
+fs-more = "0.8.0"
 itertools = "0.13.0"
 log = "0.4.22"
 regex = "1.11.0"
