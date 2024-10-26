@@ -8,7 +8,8 @@ use std::{
 
 use color_eyre::eyre::{bail, eyre, Context};
 use fs_more::directory::{
-    copy_directory, DirectoryCopyDepthLimit, DirectoryCopyOptions, SymlinkBehaviour,
+    copy_directory, BrokenSymlinkBehaviour, DestinationDirectoryRule, DirectoryCopyDepthLimit,
+    DirectoryCopyOptions, SymlinkBehaviour,
 };
 use itertools::Itertools;
 use log::info;
@@ -188,6 +189,13 @@ pub fn package(
     force: bool,
     keep_temp: bool,
 ) -> color_eyre::Result<()> {
+    const COPY_DIR_DEFAULT_OPTS: DirectoryCopyOptions = DirectoryCopyOptions {
+        destination_directory_rule: DestinationDirectoryRule::AllowEmpty,
+        copy_depth_limit: DirectoryCopyDepthLimit::Limited { maximum_depth: 64 },
+        symlink_behaviour: SymlinkBehaviour::Follow,
+        broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
+    };
+
     let config_dir = config_dir.as_ref();
     let profile_name = &profile.name;
     let output_dir = output_dir.as_ref();
@@ -219,12 +227,7 @@ pub fn package(
 
     // copy skeleton directory
     let mapped_skel_dir = temp_dir_path.join("mapped-skel");
-    let copy_options = DirectoryCopyOptions {
-        copy_depth_limit: DirectoryCopyDepthLimit::Limited { maximum_depth: 64 },
-        symlink_behaviour: SymlinkBehaviour::Follow,
-        ..Default::default()
-    };
-    copy_directory(&skel_dir, &mapped_skel_dir, copy_options).wrap_err_with(|| {
+    copy_directory(&skel_dir, &mapped_skel_dir, COPY_DIR_DEFAULT_OPTS).wrap_err_with(|| {
         format!("Failed to copy skeleton directory {skel_dir:?} to {mapped_skel_dir:?}")
     })?;
 
@@ -248,7 +251,7 @@ pub fn package(
     for username in usernames {
         // copy skeleton directory
         let pkg_dir = pkg_parent_dir.join(username);
-        copy_directory(&mapped_skel_dir, &pkg_dir, Default::default()).wrap_err_with(|| {
+        copy_directory(&mapped_skel_dir, &pkg_dir, COPY_DIR_DEFAULT_OPTS).wrap_err_with(|| {
             format!(
                 "Failed to copy transformed skeleton directory {mapped_skel_dir:?} to {pkg_dir:?}"
             )
