@@ -84,9 +84,7 @@ fn main() -> color_eyre::Result<()> {
     match &action {
         Action::Gen { .. } => unreachable!(), // already handled
         Action::Profile { action } => match action {
-            ProfileAction::List => {
-                list_profiles(&config, profile).wrap_err("Failed to list known profiles")?
-            }
+            ProfileAction::List => list_profiles(&config, profile),
         },
         Action::User { action } => match action {
             UserAction::List { only_expired } => {

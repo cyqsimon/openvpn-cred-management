@@ -54,7 +54,7 @@ pub fn init_config(config_path: impl AsRef<Path>, allow_overwrite: bool) -> colo
     Ok(())
 }
 
-pub fn list_profiles(config: &Config, active: &Profile) -> color_eyre::Result<()> {
+pub fn list_profiles(config: &Config, active: &Profile) {
     let output = config
         .profiles
         .iter()
@@ -71,7 +71,6 @@ pub fn list_profiles(config: &Config, active: &Profile) -> color_eyre::Result<()
         })
         .join("\n");
     println!("{output}");
-    Ok(())
 }
 
 pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre::Result<()> {
