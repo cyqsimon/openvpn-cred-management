@@ -28,7 +28,7 @@ pub struct CliArgs {
     pub force: bool,
 
     /// Do not run post-action scripts.
-    #[arg(long = "no-post-action-scripts", visible_aliases = ["no-post-scripts"], global = true)]
+    #[arg(long = "no-post-action-scripts", global = true)]
     pub no_post_action_scripts: bool,
 
     #[command(subcommand)]
@@ -64,15 +64,12 @@ pub enum Action {
     /// Initialise a config file.
     ///
     /// If `config_path` is not specified, the default location is used.
-    #[command(visible_aliases = ["init"])]
     InitConfig,
 
     /// List all known profiles.
-    #[command(visible_aliases = ["profiles"])]
     ListProfiles,
 
     /// List all certificates, with optional filtering.
-    #[command(visible_aliases = ["ls"])]
     List {
         /// Only show expired certificates.
         #[arg(short = 'e', long = "expired")]
@@ -80,7 +77,6 @@ pub enum Action {
     },
 
     /// Generate a certificate for a new user.
-    #[command(visible_aliases = ["new"])]
     NewUser {
         /// The usernames of the certificates to generate.
         #[arg(index = 1, value_name = "NAME", required = true)]
@@ -92,7 +88,6 @@ pub enum Action {
     },
 
     /// Revoke the certificate for an existing user.
-    #[command(visible_aliases = ["rm"])]
     RmUser {
         /// The usernames of the users to revoke.
         #[arg(index = 1, value_name = "NAME", required = true)]
@@ -104,7 +99,6 @@ pub enum Action {
     },
 
     /// Create redistributable packages for the specified users.
-    #[command(visible_aliases = ["pkg", "package"])]
     PackageFor {
         /// The usernames of the users to package for.
         #[arg(index = 1, value_name = "NAME", required = true)]
