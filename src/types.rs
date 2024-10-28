@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use xshell::{cmd, Shell};
 
-use crate::cli::ActionType;
+use crate::cli::Action;
 
 /// A validated username.
 #[derive(Clone, Debug, derive_more::Deref, derive_more::Display, Eq, PartialEq)]
@@ -36,16 +36,64 @@ impl AsRef<Path> for Username {
     }
 }
 
-/// A validated map of custom scripts to be run before or after a particular action.
+/// A known action that supports custom scripting.
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Hash,
+    Ord,
+    PartialOrd,
+    strum::IntoStaticStr,
+    strum::EnumIter,
+    Serialize,
+    Deserialize,
+)]
+#[strum(serialize_all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
+pub enum ScriptableActionKind {
+    UserList,
+    UserNew,
+    UserRm,
+    UserPkg,
+}
+impl TryFrom<&Action> for ScriptableActionKind {
+    type Error = color_eyre::Report;
+    fn try_from(action: &Action) -> Result<Self, Self::Error> {
+        use crate::cli::{GenAction as G, ProfileAction as P, UserAction as U};
+
+        // don't use wildcard matching here, so that the compiler will complain
+        // if we added an action but forgot to update this
+        let kind = match action {
+            Action::Gen { action: G::Completion { .. } | G::Config }
+            | Action::Profile { action: P::List } => {
+                bail!("This action is not scriptable")
+            }
+            Action::User { action, .. } => match action {
+                U::List { .. } => Self::UserList,
+                U::New { .. } => Self::UserNew,
+                U::Rm { .. } => Self::UserRm,
+                U::Pkg { .. } => Self::UserPkg,
+            },
+        };
+        Ok(kind)
+    }
+}
+impl TryFrom<Action> for ScriptableActionKind {
+    type Error = color_eyre::Report;
+    fn try_from(action: Action) -> Result<Self, Self::Error> {
+        (&action).try_into()
+    }
+}
+
+/// A map of custom scripts to be run before or after a particular action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(try_from = "CustomScriptsMapValidator")]
-pub struct CustomScriptsMap(BTreeMap<ActionType, Vec<String>>);
+pub struct CustomScriptsMap(BTreeMap<ScriptableActionKind, Vec<String>>);
 impl Default for CustomScriptsMap {
     fn default() -> Self {
-        let map = ActionType::iter()
-            .filter(|a| !matches!(a, ActionType::InitConfig)) // non-applicable subcommands
-            .map(|a| (a, vec![]))
-            .collect();
+        let map = ScriptableActionKind::iter().map(|a| (a, vec![])).collect();
         Self(map)
     }
 }
@@ -56,17 +104,17 @@ impl CustomScriptsMap {
 
         // insert example scripts
         map.0
-            .entry(ActionType::List)
+            .entry(ScriptableActionKind::UserList)
             .or_default()
             .push("echo 'Never play f6' >/dev/stderr".into());
 
         map
     }
 
-    /// Run all custom scripts defined for a type of action.
+    /// Run all custom scripts defined for a kind of action.
     ///
     /// The scripts are run in the current working directory.
-    pub fn run_for(&self, action: ActionType) -> color_eyre::Result<()> {
+    pub fn run_for(&self, action: ScriptableActionKind) -> color_eyre::Result<()> {
         // skip if map key is not found or if the map entry is empty
         let Some(scripts) = self
             .0
@@ -84,24 +132,5 @@ impl CustomScriptsMap {
         }
 
         Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
-struct CustomScriptsMapValidator(BTreeMap<ActionType, Vec<String>>);
-impl TryFrom<CustomScriptsMapValidator> for CustomScriptsMap {
-    type Error = color_eyre::Report;
-
-    fn try_from(scripts: CustomScriptsMapValidator) -> Result<Self, Self::Error> {
-        let scripts = scripts.0;
-
-        // non-applicable subcommands must not be defined
-        for action in [ActionType::InitConfig] {
-            if scripts.contains_key(&action) {
-                bail!(r#"Custom scripts are not supported for the "{action}" subcommand"#);
-            }
-        }
-
-        Ok(Self(scripts))
     }
 }

@@ -13,8 +13,8 @@ use crate::{
     action::{
         init_config, list_expired, list_profiles, list_users, new_user, package, remove_user,
     },
-    cli::{Action, ActionType, CliArgs},
-    config::{default_config_path, Config},
+    cli::{Action, CliArgs, GenAction, ProfileAction, UserAction},
+    config::{default_config_path, Config, Profile},
 };
 
 fn main() -> color_eyre::Result<()> {
@@ -42,7 +42,7 @@ fn main() -> color_eyre::Result<()> {
     .wrap_err("Failed to initialise logger")?;
 
     // handle completion generation
-    if let Action::Complete { shell } = &action {
+    if let Action::Gen { action: GenAction::Completion { shell } } = &action {
         let Some(shell) = shell.or_else(clap_complete::Shell::from_env) else {
             bail!("Failed to determine your shell; please specify one manually.")
         };
@@ -64,7 +64,7 @@ fn main() -> color_eyre::Result<()> {
     };
 
     // handle config init
-    if let Action::InitConfig = &action {
+    if let Action::Gen { action: GenAction::Config } = &action {
         init_config(&config_path, force)
             .wrap_err_with(|| format!("Failed to initialise config {config_path:?}"))?;
         return Ok(());
@@ -76,80 +76,94 @@ fn main() -> color_eyre::Result<()> {
 
     // get profile
     let profile = config
-        .get_profile_or_default(profile)
+        .get_profile_or_default(profile.as_ref())
         .wrap_err("Cannot select a profile")?;
     let profile_name = &profile.name;
 
     // other actions
     match &action {
-        Action::Complete { .. } => unreachable!(), // already handled
-        Action::InitConfig { .. } => unreachable!(), // already handled
-        Action::ListProfiles => {
-            list_profiles(&config, profile).wrap_err("Failed to list known profiles")?
-        }
-        Action::List { only_expired } => {
-            if *only_expired {
-                list_expired(config_dir, &config, profile).wrap_err_with(|| {
-                    format!(r#"Failed to list expired users of profile "{profile_name}""#)
-                })?
-            } else {
-                list_users(config_dir, profile).wrap_err_with(|| {
-                    format!(r#"Failed to list users of profile "{profile_name}""#)
-                })?
+        Action::Gen { .. } => unreachable!(), // already handled
+        Action::Profile { action } => match action {
+            ProfileAction::List => {
+                list_profiles(&config, profile).wrap_err("Failed to list known profiles")?
             }
-        }
-        Action::NewUser { usernames, days } => {
-            new_user(config_dir, &config, profile, usernames, *days, force).wrap_err_with(|| {
-                format!(r#"Failed while adding users to profile "{profile_name}""#)
-            })?
-        }
-        Action::RmUser { usernames, no_update_crl } => remove_user(
-            config_dir,
-            &config,
-            profile,
-            usernames,
-            !no_update_crl,
-            force,
-        )
-        .wrap_err_with(|| {
-            format!(r#"Failed while removing users from profile "{profile_name}""#)
-        })?,
-        Action::PackageFor {
-            usernames,
-            add_prefix,
-            output_dir,
-            keep_temp,
-        } => {
-            let output_dir = match output_dir {
-                Some(dir) => dir.to_owned(),
-                None => env::current_dir().wrap_err(
-                    "No output directory specified, and failed to get current working directory",
-                )?,
-            };
-            package(
+        },
+        Action::User { action } => match action {
+            UserAction::List { only_expired } => {
+                if *only_expired {
+                    list_expired(config_dir, &config, profile).wrap_err_with(|| {
+                        format!(r#"Failed to list expired users of profile "{profile_name}""#)
+                    })?
+                } else {
+                    list_users(config_dir, profile).wrap_err_with(|| {
+                        format!(r#"Failed to list users of profile "{profile_name}""#)
+                    })?
+                }
+            }
+            UserAction::New { usernames, days } => {
+                new_user(config_dir, &config, profile, usernames, *days, force).wrap_err_with(
+                    || format!(r#"Failed while adding users to profile "{profile_name}""#),
+                )?
+            }
+            UserAction::Rm { usernames, no_update_crl } => remove_user(
                 config_dir,
+                &config,
                 profile,
                 usernames,
-                *add_prefix,
-                output_dir,
+                !no_update_crl,
                 force,
-                *keep_temp,
             )
             .wrap_err_with(|| {
-                format!(r#"Failed while packaging users of profile "{profile_name}""#)
-            })?;
-        }
+                format!(r#"Failed while removing users from profile "{profile_name}""#)
+            })?,
+            UserAction::Pkg {
+                usernames,
+                add_prefix,
+                output_dir,
+                keep_temp,
+            } => {
+                let output_dir = match output_dir {
+                        Some(dir) => dir.to_owned(),
+                        None => env::current_dir().wrap_err(
+                            "No output directory specified, and failed to get current working directory",
+                        )?,
+                    };
+                package(
+                    config_dir,
+                    profile,
+                    usernames,
+                    *add_prefix,
+                    output_dir,
+                    force,
+                    *keep_temp,
+                )
+                .wrap_err_with(|| {
+                    format!(r#"Failed while packaging users of profile "{profile_name}""#)
+                })?
+            }
+        },
     }
 
     // post-action scripts
     if !no_post_action_scripts {
-        let action_type = ActionType::from(&action);
-        if let Some(scripts) = &profile.post_action_scripts {
-            scripts
-                .run_for(action_type)
-                .wrap_err("Failed while running post-action scripts")?;
-        };
+        run_post_action_scripts(profile, &action)?;
     }
 
+    Ok(())
+}
+
+fn run_post_action_scripts(profile: &Profile, action: &Action) -> color_eyre::Result<()> {
+    let Ok(action_kind) = action.try_into() else {
+        // action does not support scripting
+        return Ok(());
+    };
+    let Some(scripts) = &profile.post_action_scripts else {
+        // no scripts specified
+        return Ok(());
+    };
+
+    scripts
+        .run_for(action_kind)
+        .wrap_err("Failed while running post-action scripts")?;
     Ok(())
 }

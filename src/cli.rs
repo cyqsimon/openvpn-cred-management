@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand, ValueHint};
 use clap_complete::Shell;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
-use serde::{Deserialize, Serialize};
 
 use crate::types::Username;
 
@@ -38,24 +37,33 @@ pub struct CliArgs {
     pub verbosity: Verbosity<InfoLevel>,
 }
 
-#[derive(Clone, Debug, Subcommand, strum::EnumDiscriminants)]
-#[strum_discriminants(
-    name(ActionType),
-    derive(
-        strum::Display,
-        Hash,
-        Ord,
-        PartialOrd,
-        strum::EnumIter,
-        Serialize,
-        Deserialize
-    ),
-    strum(serialize_all = "kebab-case"),
-    serde(rename_all = "kebab-case")
-)]
+/// All supported actions, grouped into categories.
+#[derive(Clone, Debug, Subcommand)]
 pub enum Action {
+    /// Generate artefacts like completion scripts and config files.
+    Gen {
+        #[command(subcommand)]
+        action: GenAction,
+    },
+
+    /// Operations on profiles.
+    Profile {
+        #[command(subcommand)]
+        action: ProfileAction,
+    },
+
+    /// Operations on users.
+    User {
+        #[command(subcommand)]
+        action: UserAction,
+    },
+}
+
+/// All supported generate actions.
+#[derive(Clone, Debug, Subcommand)]
+pub enum GenAction {
     /// Generate shell completion to stdout.
-    Complete {
+    Completion {
         /// Specify the shell to generate completion for.
         #[arg(index = 1, value_name = "KIND")]
         shell: Option<Shell>,
@@ -64,11 +72,19 @@ pub enum Action {
     /// Initialise a config file.
     ///
     /// If `config_path` is not specified, the default location is used.
-    InitConfig,
+    Config,
+}
 
+/// All supported profiles actions.
+#[derive(Clone, Debug, Subcommand)]
+pub enum ProfileAction {
     /// List all known profiles.
-    ListProfiles,
+    List,
+}
 
+/// All supported user actions.
+#[derive(Clone, Debug, Subcommand)]
+pub enum UserAction {
     /// List all certificates, with optional filtering.
     List {
         /// Only show expired certificates.
@@ -77,7 +93,7 @@ pub enum Action {
     },
 
     /// Generate a certificate for a new user.
-    NewUser {
+    New {
         /// The usernames of the certificates to generate.
         #[arg(index = 1, value_name = "NAME", required = true)]
         usernames: Vec<Username>,
@@ -88,7 +104,7 @@ pub enum Action {
     },
 
     /// Revoke the certificate for an existing user.
-    RmUser {
+    Rm {
         /// The usernames of the users to revoke.
         #[arg(index = 1, value_name = "NAME", required = true)]
         usernames: Vec<Username>,
@@ -99,7 +115,7 @@ pub enum Action {
     },
 
     /// Create redistributable packages for the specified users.
-    PackageFor {
+    Pkg {
         /// The usernames of the users to package for.
         #[arg(index = 1, value_name = "NAME", required = true)]
         usernames: Vec<Username>,
