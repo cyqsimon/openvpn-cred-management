@@ -31,7 +31,7 @@ cargo build --release
 
 # completions
 for SHELL in bash zsh fish; do
-    target/release/%{_bin_name} complete $SHELL > "%{_bin_name}.$SHELL"
+    target/release/%{_bin_name} gen completion $SHELL > "%{_bin_name}.$SHELL"
 done
 
 %install
