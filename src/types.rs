@@ -46,7 +46,6 @@ impl AsRef<Path> for Username {
     Hash,
     Ord,
     PartialOrd,
-    strum::IntoStaticStr,
     strum::EnumIter,
     Serialize,
     Deserialize,
