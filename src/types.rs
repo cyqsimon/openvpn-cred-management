@@ -36,6 +36,7 @@ impl AsRef<Path> for Username {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 /// A known action that supports custom scripting.
 #[derive(
     Copy,
