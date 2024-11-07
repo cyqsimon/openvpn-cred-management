@@ -27,6 +27,6 @@ simplelog = "0.12.2"
 strum = { version = "0.26.3", features = ["derive"] }
 temp-dir = "0.1.14"
 toml_edit = { version = "0.22.22", features = ["serde"] }
-xshell = "0.2.6"
+xshell = "=0.2.2"
 zip = "2.2.0"
 zip-extensions = "0.8.1"
