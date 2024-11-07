@@ -12,16 +12,16 @@ path = "src/main.rs"
 chrono = "0.4.38"
 clap = { version = "4.5.20", features = ["derive", "cargo"] }
 clap-verbosity-flag = "2.2.2"
-clap_complete = "4.5.35"
+clap_complete = "4.5.37"
 color-eyre = "0.6.3"
 derive_more = { version = "1.0.0", features = ["deref", "display"] }
 directories = "5.0.1"
-documented = "0.8.0"
+documented = "0.9.1"
 fs-more = "0.8.0"
 itertools = "0.13.0"
 log = "0.4.22"
 regex = "1.11.1"
-serde = { version = "1.0.213", features = ["derive"] }
+serde = { version = "1.0.214", features = ["derive"] }
 serde_with = "3.11.0"
 simplelog = "0.12.2"
 strum = { version = "0.26.3", features = ["derive"] }
