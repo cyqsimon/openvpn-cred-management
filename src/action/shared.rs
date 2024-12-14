@@ -7,7 +7,7 @@ use std::{
     sync::LazyLock,
 };
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use color_eyre::eyre::{eyre, Context};
 use log::{debug, warn};
 use regex::Regex;
@@ -101,9 +101,14 @@ pub fn get_expired_users(
     let easy_rsa = &config.easy_rsa_path;
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
-    // any larger and easy-rsa errors
-    const MAX_DAYS: usize = 2912876;
-    let days_arg = format!("--days={MAX_DAYS}");
+    // max days + current time must not exceed year 9999, else OpenSSL complains
+    const TARGET_DATE: DateTime<Utc> = NaiveDate::from_ymd_opt(9999, 12, 31)
+        .unwrap()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_utc();
+    let max_days = (TARGET_DATE - Utc::now()).num_days();
+    let days_arg = format!("--days={max_days}");
 
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
     let show_expire_output = cmd!(sh, "{easy_rsa} --pki-dir={pki_dir} {days_arg} show-expire")
