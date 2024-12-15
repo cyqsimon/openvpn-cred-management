@@ -153,7 +153,7 @@ pub fn remove_user(
         .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
     for username in usernames {
         if !known_users.contains(username) {
-            bail!(r#"User "{username}" does not exists in profile "{profile_name}""#);
+            bail!(r#"User "{username}" does not exist in profile "{profile_name}""#);
         }
     }
 
@@ -208,7 +208,7 @@ pub fn package(
         .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
     for username in usernames {
         if !known_users.contains(username) {
-            bail!(r#"User "{username}" does not exists in profile "{profile_name}""#);
+            bail!(r#"User "{username}" does not exist in profile "{profile_name}""#);
         }
     }
 
