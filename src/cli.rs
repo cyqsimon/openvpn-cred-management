@@ -92,6 +92,13 @@ pub enum UserAction {
         only_expired: bool,
     },
 
+    /// Show info of a specific user's certificate.
+    Info {
+        /// The usernames of the certificates to show.
+        #[arg(index = 1, value_name = "NAME", required = true)]
+        usernames: Vec<Username>,
+    },
+
     /// Generate a certificate for a new user.
     New {
         /// The usernames of the certificates to generate.

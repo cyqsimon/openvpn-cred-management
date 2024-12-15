@@ -55,6 +55,7 @@ impl AsRef<Path> for Username {
 #[serde(rename_all = "kebab-case")]
 pub enum ScriptableActionKind {
     UserList,
+    UserInfo,
     UserNew,
     UserRm,
     UserPkg,
@@ -73,6 +74,7 @@ impl TryFrom<&Action> for ScriptableActionKind {
             }
             Action::User { action, .. } => match action {
                 U::List { .. } => Self::UserList,
+                U::Info { .. } => Self::UserInfo,
                 U::New { .. } => Self::UserNew,
                 U::Rm { .. } => Self::UserRm,
                 U::Pkg { .. } => Self::UserPkg,

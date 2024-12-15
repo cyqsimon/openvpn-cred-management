@@ -11,7 +11,8 @@ use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
     action::{
-        init_config, list_expired, list_profiles, list_users, new_user, package, remove_user,
+        info_user, init_config, list_expired, list_profiles, list_users, new_user, package,
+        remove_user,
     },
     cli::{Action, CliArgs, GenAction, ProfileAction, UserAction},
     config::{default_config_path, Config, Profile},
@@ -98,6 +99,10 @@ fn main() -> color_eyre::Result<()> {
                     })?
                 }
             }
+            UserAction::Info { usernames } => info_user(config_dir, &config, profile, usernames)
+                .wrap_err_with(|| {
+                    format!(r#"Failed while querying users of profile "{profile_name}""#)
+                })?,
             UserAction::New { usernames, days } => {
                 new_user(config_dir, &config, profile, usernames, *days, force).wrap_err_with(
                     || format!(r#"Failed while adding users to profile "{profile_name}""#),

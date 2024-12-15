@@ -99,6 +99,38 @@ pub fn list_expired(
     Ok(())
 }
 
+pub fn info_user(
+    config_dir: impl AsRef<Path>,
+    config: &Config,
+    profile: &Profile,
+    usernames: &[Username],
+) -> color_eyre::Result<()> {
+    let config_dir = config_dir.as_ref();
+    let profile_name = &profile.name;
+
+    // sanity check
+    let known_users = get_users(config_dir, profile)
+        .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
+    for username in usernames {
+        if !known_users.contains(username) {
+            bail!(r#"User "{username}" does not exist in profile "{profile_name}""#);
+        }
+    }
+
+    let easy_rsa = &config.easy_rsa_path;
+    // allow `easy_rsa_pki_dir` to be relative to the config file
+    let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
+
+    let sh = Shell::new().wrap_err("Failed to create subshell")?;
+    for username in usernames {
+        cmd!(sh, "{easy_rsa} --pki-dir={pki_dir} show-cert {username}")
+            .run()
+            .wrap_err("User creation command failed to execute")?;
+    }
+
+    Ok(())
+}
+
 pub fn new_user(
     config_dir: impl AsRef<Path>,
     config: &Config,
