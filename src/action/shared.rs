@@ -130,21 +130,29 @@ pub fn get_expired_users(
         .filter_map(|line| {
             let captures = LINE_MATCHER.captures(line)?;
 
-            let name = {let raw = captures.get(5).unwrap().as_str(); // capture always exists
-                raw.parse::<Username>() .inspect_err(|err| warn!(r#"The username "{raw}" failed parsing; ignoring: {err:?}"#))
-                }.ok()?;
+            let name = {
+                let raw = captures.get(5).unwrap().as_str(); // capture always exists
+                raw.parse::<Username>().inspect_err(|err| {
+                    warn!(r#"The username "{raw}" failed parsing; ignoring: {err:?}"#)
+                })
+            }
+            .ok()?;
 
             let expiry = {
                 let date = captures.get(3).unwrap().as_str(); // capture always exists
                 let time = captures.get(4).unwrap().as_str(); // capture always exists
                 DateTime::parse_from_rfc3339(&format!("{date}T{time}")).inspect_err(|_| {
-                    warn!("easy-rsa reported expiry time of `{name}` in an unexpected format: `{date} {time}`")
+                    warn!(
+                        "easy-rsa reported expiry time of `{name}` \
+                        in an unexpected format: `{date} {time}`"
+                    )
                 })
             }
             .ok()?;
 
             (now > expiry).then_some(name)
-        }).collect();
+        })
+        .collect();
 
     Ok(expired)
 }
