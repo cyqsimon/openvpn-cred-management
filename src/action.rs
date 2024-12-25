@@ -124,7 +124,7 @@ pub fn info_user(
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
     for username in usernames {
         cmd!(sh, "{easy_rsa} --pki-dir={pki_dir} show-cert {username}")
-            .run()
+            .run_interactive()
             .wrap_err("User creation command failed to execute")?;
     }
 
@@ -164,7 +164,8 @@ pub fn new_user(
             sh,
             "{easy_rsa} {force_arg...} --pki-dir={pki_dir} --no-pass {days_arg...} build-client-full {username}"
         )
-        .run().wrap_err("User creation command failed to execute")?;
+        .run_interactive()
+        .wrap_err("User creation command failed to execute")?;
     }
 
     Ok(())
@@ -200,7 +201,7 @@ pub fn remove_user(
             sh,
             "{easy_rsa} {force_arg...} --pki-dir={pki_dir} revoke {username}"
         )
-        .run()
+        .run_interactive()
         .wrap_err("User deletion command failed to execute")?;
     }
 
@@ -263,11 +264,12 @@ pub fn package(
     })?;
 
     // apply transforms
-    let sh = Shell::new().wrap_err("Failed to create subshell")?;
-    sh.change_dir(&mapped_skel_dir);
+    let sh = Shell::new()
+        .wrap_err("Failed to create subshell")?
+        .with_current_dir(&mapped_skel_dir);
     for script in &packaging.skel_map_scripts {
         cmd!(sh, "bash -c {script}")
-            .run()
+            .run_interactive()
             .wrap_err("A skeleton transform script failed to execute")?;
     }
     drop(sh);

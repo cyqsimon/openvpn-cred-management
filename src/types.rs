@@ -129,7 +129,7 @@ impl CustomScriptsMap {
         let sh = Shell::new().wrap_err("Failed to create subshell")?;
         for script in scripts {
             cmd!(sh, "bash -c {script}")
-                .run()
+                .run_interactive()
                 .wrap_err("A custom script failed to execute")?;
         }
 

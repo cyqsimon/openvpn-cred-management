@@ -198,7 +198,7 @@ pub fn regenerate_crl(
 
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
     cmd!(sh, "{easy_rsa} {force_arg...} --pki-dir={pki_dir} gen-crl")
-        .run()
+        .run_interactive()
         .wrap_err("CRL regenerate command failed to execute")?;
 
     Ok(())
