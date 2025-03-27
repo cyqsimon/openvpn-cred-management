@@ -108,7 +108,7 @@ fn main() -> color_eyre::Result<()> {
                     || format!(r#"Failed while adding users to profile "{profile_name}""#),
                 )?
             }
-            UserAction::Rm { usernames, no_update_crl } => remove_user(
+            UserAction::Remove { usernames, no_update_crl } => remove_user(
                 config_dir,
                 &config,
                 profile,
@@ -119,7 +119,7 @@ fn main() -> color_eyre::Result<()> {
             .wrap_err_with(|| {
                 format!(r#"Failed while removing users from profile "{profile_name}""#)
             })?,
-            UserAction::Pkg {
+            UserAction::Package {
                 usernames,
                 add_prefix,
                 output_dir,

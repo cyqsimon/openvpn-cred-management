@@ -76,8 +76,8 @@ impl TryFrom<&Action> for ScriptableActionKind {
                 U::List { .. } => Self::UserList,
                 U::Info { .. } => Self::UserInfo,
                 U::New { .. } => Self::UserNew,
-                U::Rm { .. } => Self::UserRm,
-                U::Pkg { .. } => Self::UserPkg,
+                U::Remove { .. } => Self::UserRm,
+                U::Package { .. } => Self::UserPkg,
             },
         };
         Ok(kind)
