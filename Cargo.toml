@@ -9,24 +9,24 @@ name = "ocm"
 path = "src/main.rs"
 
 [dependencies]
-chrono = "0.4.39"
-clap = { version = "4.5.23", features = ["derive", "cargo"] }
+chrono = "0.4.40"
+clap = { version = "4.5.34", features = ["derive", "cargo"] }
 clap-verbosity-flag = "3.0.2"
-clap_complete = "4.5.40"
+clap_complete = "4.5.47"
 color-eyre = "0.6.3"
-derive_more = { version = "1.0.0", features = ["deref", "display"] }
-directories = "5.0.1"
+derive_more = { version = "2.0.1", features = ["deref", "display"] }
+directories = "6.0.0"
 documented = "0.9.1"
 fs-more = "0.8.0"
-itertools = "0.13.0"
-log = "0.4.22"
+itertools = "0.14.0"
+log = "0.4.27"
 regex = "1.11.1"
-serde = { version = "1.0.216", features = ["derive"] }
-serde_with = "3.11.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_with = "3.12.0"
 simplelog = "0.12.2"
-strum = { version = "0.26.3", features = ["derive"] }
+strum = { version = "0.27.1", features = ["derive"] }
 temp-dir = "0.1.14"
-toml_edit = { version = "0.22.22", features = ["serde"] }
+toml_edit = { version = "0.22.24", features = ["serde"] }
 xshell = "0.3.0-pre.2"
-zip = "2.2.2"
+zip = "2.5.0"
 zip-extensions = "0.8.1"
