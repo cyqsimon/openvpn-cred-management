@@ -79,7 +79,7 @@ pub enum GenAction {
 #[derive(Clone, Debug, Subcommand)]
 pub enum ProfileAction {
     /// List all known profiles.
-    #[command(alias = "ls")]
+    #[command(visible_alias = "ls")]
     List,
 }
 
@@ -87,7 +87,7 @@ pub enum ProfileAction {
 #[derive(Clone, Debug, Subcommand)]
 pub enum UserAction {
     /// List all certificates, with optional filtering.
-    #[command(alias = "ls")]
+    #[command(visible_alias = "ls")]
     List {
         /// Only show expired certificates.
         #[arg(short = 'e', long = "expired")]
@@ -95,7 +95,7 @@ pub enum UserAction {
     },
 
     /// Show info of a specific user's certificate.
-    #[command(aliases = ["get", "show"])]
+    #[command(visible_aliases = ["get", "show"])]
     Info {
         /// The usernames of the certificates to show.
         #[arg(index = 1, value_name = "NAME", required = true)]
@@ -103,7 +103,7 @@ pub enum UserAction {
     },
 
     /// Generate a certificate for a new user.
-    #[command(aliases = ["add", "create"])]
+    #[command(visible_aliases = ["add", "create"])]
     New {
         /// The usernames of the certificates to generate.
         #[arg(index = 1, value_name = "NAME", required = true)]
@@ -115,7 +115,7 @@ pub enum UserAction {
     },
 
     /// Revoke the certificate for an existing user.
-    #[command(aliases = ["rm", "del", "delete"])]
+    #[command(visible_aliases = ["rm", "del", "delete"])]
     Remove {
         /// The usernames of the users to revoke.
         #[arg(index = 1, value_name = "NAME", required = true)]
@@ -127,7 +127,7 @@ pub enum UserAction {
     },
 
     /// Create redistributable packages for the specified users.
-    #[command(alias = "pkg")]
+    #[command(visible_alias = "pkg")]
     Package {
         /// The usernames of the users to package for.
         #[arg(index = 1, value_name = "NAME", required = true)]
