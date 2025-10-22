@@ -18,6 +18,19 @@ use crate::{
     types::Username,
 };
 
+/// Get the number of days before year 10000.
+///
+/// This is the maximum number of days allowable for the `--days` option,
+/// before OpenSSL starts complaining.
+pub fn get_max_days() -> i64 {
+    const TARGET_DATE: DateTime<Utc> = NaiveDate::from_ymd_opt(9999, 12, 31)
+        .unwrap()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_utc();
+    (TARGET_DATE - Utc::now()).num_days()
+}
+
 pub fn get_users(
     config_dir: impl AsRef<Path>,
     profile: &Profile,
@@ -101,14 +114,7 @@ pub fn get_expired_users(
     let easy_rsa = &config.easy_rsa_path;
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
-    // max days + current time must not exceed year 9999, else OpenSSL complains
-    const TARGET_DATE: DateTime<Utc> = NaiveDate::from_ymd_opt(9999, 12, 31)
-        .unwrap()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let max_days = (TARGET_DATE - Utc::now()).num_days();
-    let days_arg = format!("--days={max_days}");
+    let days_arg = format!("--days={}", get_max_days());
 
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
     let show_expire_output = cmd!(sh, "{easy_rsa} --pki-dir={pki_dir} {days_arg} show-expire")
@@ -195,11 +201,17 @@ pub fn regenerate_crl(
     let force_arg = force.then_some("--batch");
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
+    // an expired CRL causes all clients to be rejected
+    // this CRL is self-managed anyways, so we set it to practically-unlimited
+    let days_arg = format!("--days={}", get_max_days());
 
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
-    cmd!(sh, "{easy_rsa} {force_arg...} --pki-dir={pki_dir} gen-crl")
-        .run_interactive()
-        .wrap_err("CRL regenerate command failed to execute")?;
+    cmd!(
+        sh,
+        "{easy_rsa} {force_arg...} --pki-dir={pki_dir} {days_arg} gen-crl"
+    )
+    .run_interactive()
+    .wrap_err("CRL regenerate command failed to execute")?;
 
     Ok(())
 }
