@@ -94,7 +94,7 @@ pub enum UserAction {
         only_expired: bool,
     },
 
-    /// Show info of a specific user's certificate.
+    /// Show info on the certificates of specified users.
     #[command(visible_aliases = ["get", "show"])]
     Info {
         /// The usernames of the certificates to show.
@@ -102,19 +102,19 @@ pub enum UserAction {
         usernames: Vec<Username>,
     },
 
-    /// Generate a certificate for a new user.
+    /// Generate certificates for new users.
     #[command(visible_aliases = ["add", "create"])]
     New {
         /// The usernames of the certificates to generate.
         #[arg(index = 1, value_name = "NAME", required = true)]
         usernames: Vec<Username>,
 
-        /// The number of days this certificate stays valid.
+        /// The number of days the certificate stays valid.
         #[arg(short = 'd', long = "days", value_name = "N")]
         days: Option<usize>,
     },
 
-    /// Revoke the certificate for an existing user.
+    /// Revoke the certificates for existing users.
     #[command(visible_aliases = ["rm", "del", "delete"])]
     Remove {
         /// The usernames of the users to revoke.
