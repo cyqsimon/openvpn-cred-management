@@ -114,6 +114,17 @@ pub enum UserAction {
         days: Option<usize>,
     },
 
+    /// Renew certificates for existing users.
+    Renew {
+        /// The usernames of the users to renew.
+        #[arg(index = 1, value_name = "NAME", required = true)]
+        usernames: Vec<Username>,
+
+        /// Do not revoke the replaced certificates.
+        #[arg(short = 'k', long = "keep-old")]
+        keep_old: bool,
+    },
+
     /// Revoke the certificates for existing users.
     #[command(visible_aliases = ["rm", "del", "delete"])]
     Remove {

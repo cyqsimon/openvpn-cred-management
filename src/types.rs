@@ -57,6 +57,7 @@ pub enum ScriptableActionKind {
     UserList,
     UserInfo,
     UserNew,
+    UserRenew,
     UserRm,
     UserPkg,
 }
@@ -76,6 +77,7 @@ impl TryFrom<&Action> for ScriptableActionKind {
                 U::List { .. } => Self::UserList,
                 U::Info { .. } => Self::UserInfo,
                 U::New { .. } => Self::UserNew,
+                U::Renew { .. } => Self::UserRenew,
                 U::Remove { .. } => Self::UserRm,
                 U::Package { .. } => Self::UserPkg,
             },

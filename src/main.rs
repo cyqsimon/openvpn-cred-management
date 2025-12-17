@@ -12,7 +12,7 @@ use simplelog::{ColorChoice, TermLogger, TerminalMode};
 use crate::{
     action::{
         info_user, init_config, list_expired, list_profiles, list_users, new_user, package,
-        remove_user,
+        remove_user, renew_user,
     },
     cli::{Action, CliArgs, GenAction, ProfileAction, UserAction},
     config::{default_config_path, Config, Profile},
@@ -107,6 +107,12 @@ fn main() -> color_eyre::Result<()> {
                 new_user(config_dir, &config, profile, usernames, *days, force).wrap_err_with(
                     || format!(r#"Failed while adding users to profile "{profile_name}""#),
                 )?
+            }
+            UserAction::Renew { usernames, keep_old } => {
+                renew_user(config_dir, &config, profile, usernames, *keep_old, force)
+                    .wrap_err_with(|| {
+                        format!(r#"Failed while renewing users in profile "{profile_name}""#)
+                    })?
             }
             UserAction::Remove { usernames } => {
                 remove_user(config_dir, &config, profile, usernames, force).wrap_err_with(|| {

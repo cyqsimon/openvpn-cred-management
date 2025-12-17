@@ -171,6 +171,54 @@ pub fn new_user(
     Ok(())
 }
 
+pub fn renew_user(
+    config_dir: impl AsRef<Path>,
+    config: &Config,
+    profile: &Profile,
+    usernames: &[Username],
+    keep_old: bool,
+    force: bool,
+) -> color_eyre::Result<()> {
+    let config_dir = config_dir.as_ref();
+    let profile_name = &profile.name;
+
+    let known_users = get_users(config_dir, profile)
+        .wrap_err_with(|| format!(r#"Cannot get users of "{profile_name}" profile"#))?;
+    for username in usernames {
+        if !known_users.contains(username) {
+            bail!(r#"User "{username}" does not exist in profile "{profile_name}""#);
+        }
+    }
+
+    let easy_rsa = &config.easy_rsa_path;
+    let force_arg = force.then_some("--batch");
+    // allow `easy_rsa_pki_dir` to be relative to the config file
+    let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
+
+    let sh = Shell::new().wrap_err("Failed to create subshell")?;
+    for username in usernames {
+        cmd!(
+            sh,
+            "{easy_rsa} {force_arg...} --pki-dir={pki_dir} renew {username}"
+        )
+        .run_interactive()
+        .wrap_err("User renewal command failed to execute")?;
+
+        if !keep_old {
+            cmd!(
+                sh,
+                "{easy_rsa} {force_arg...} --pki-dir={pki_dir} revoke-renewed {username}"
+            )
+            .run_interactive()
+            .wrap_err("User revoke renewed command failed to execute")?;
+
+            regenerate_crl(config_dir, config, profile, force)?;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn remove_user(
     config_dir: impl AsRef<Path>,
     config: &Config,
