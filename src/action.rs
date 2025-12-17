@@ -176,7 +176,6 @@ pub fn remove_user(
     config: &Config,
     profile: &Profile,
     usernames: &[Username],
-    update_crl: bool,
     force: bool,
 ) -> color_eyre::Result<()> {
     let config_dir = config_dir.as_ref();
@@ -205,9 +204,7 @@ pub fn remove_user(
         .wrap_err("User deletion command failed to execute")?;
     }
 
-    if update_crl {
-        regenerate_crl(config_dir, config, profile, force)?;
-    }
+    regenerate_crl(config_dir, config, profile, force)?;
 
     Ok(())
 }

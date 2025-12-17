@@ -120,10 +120,6 @@ pub enum UserAction {
         /// The usernames of the users to revoke.
         #[arg(index = 1, value_name = "NAME", required = true)]
         usernames: Vec<Username>,
-
-        /// Do not update crl.pem file.
-        #[arg(long = "no-update-crl")]
-        no_update_crl: bool,
     },
 
     /// Create redistributable packages for the specified users.

@@ -108,17 +108,11 @@ fn main() -> color_eyre::Result<()> {
                     || format!(r#"Failed while adding users to profile "{profile_name}""#),
                 )?
             }
-            UserAction::Remove { usernames, no_update_crl } => remove_user(
-                config_dir,
-                &config,
-                profile,
-                usernames,
-                !no_update_crl,
-                force,
-            )
-            .wrap_err_with(|| {
-                format!(r#"Failed while removing users from profile "{profile_name}""#)
-            })?,
+            UserAction::Remove { usernames } => {
+                remove_user(config_dir, &config, profile, usernames, force).wrap_err_with(|| {
+                    format!(r#"Failed while removing users from profile "{profile_name}""#)
+                })?
+            }
             UserAction::Package {
                 usernames,
                 add_prefix,
