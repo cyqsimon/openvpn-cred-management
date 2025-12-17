@@ -9,7 +9,7 @@ use std::{
 
 use chrono::{DateTime, NaiveDate, Utc};
 use color_eyre::eyre::{eyre, Context};
-use log::{debug, warn};
+use log::{debug, trace, warn};
 use regex::Regex;
 use xshell::{cmd, Shell};
 
@@ -125,7 +125,7 @@ pub fn get_expired_users(
     // easy-rsa's output format of each line that describes a certificate
     static LINE_MATCHER: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
-            r"^V \| Serial: ([\dA-F]+) \| Expire(s|d): ([\d\-]+) ([\d:Z+\-]+) \| CN: ([^\s]+)$",
+            r"^V \| Serial: (?<serial>[\dA-F]+) \| (Expire(s|d): )?(?<date>[\d\-]+) (?<time>[\d:Z+\-]+) \| CN: (?<name>[^\s]+)$",
         )
         .unwrap()
     });
@@ -134,10 +134,13 @@ pub fn get_expired_users(
     let expired = show_expire_output
         .lines()
         .filter_map(|line| {
-            let captures = LINE_MATCHER.captures(line)?;
+            let Some(captures) = LINE_MATCHER.captures(line) else {
+                trace!("`{line}` does not look like a certificate line");
+                return None;
+            };
 
             let name = {
-                let raw = captures.get(5).unwrap().as_str(); // capture always exists
+                let raw = captures.name("name").unwrap().as_str(); // capture always exists
                 raw.parse::<Username>().inspect_err(|err| {
                     warn!(r#"The username "{raw}" failed parsing; ignoring: {err:?}"#)
                 })
@@ -145,8 +148,8 @@ pub fn get_expired_users(
             .ok()?;
 
             let expiry = {
-                let date = captures.get(3).unwrap().as_str(); // capture always exists
-                let time = captures.get(4).unwrap().as_str(); // capture always exists
+                let date = captures.name("date").unwrap().as_str(); // capture always exists
+                let time = captures.name("time").unwrap().as_str(); // capture always exists
                 DateTime::parse_from_rfc3339(&format!("{date}T{time}")).inspect_err(|_| {
                     warn!(
                         "easy-rsa reported expiry time of `{name}` \
