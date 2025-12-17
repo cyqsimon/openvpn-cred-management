@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use chrono::Duration;
 use clap::{Parser, Subcommand, ValueHint};
 use clap_complete::Shell;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
@@ -92,6 +93,16 @@ pub enum UserAction {
         /// Only show expired certificates.
         #[arg(short = 'e', long = "expired")]
         only_expired: bool,
+
+        /// Only show certificates that are a within a specific duration until their expiry.
+        #[arg(
+            short = 'n',
+            long = "near-expiry",
+            value_name = "DURATION",
+            conflicts_with = "only_expired",
+            value_parser = humantime_parse_duration
+        )]
+        near_expiry_period: Option<Duration>,
     },
 
     /// Show info on the certificates of specified users.
@@ -153,4 +164,11 @@ pub enum UserAction {
         #[arg(long = "keep-temp")]
         keep_temp: bool,
     },
+}
+
+/// Helper parser to accept a human-friendly duration input.
+fn humantime_parse_duration(duration: &str) -> color_eyre::Result<Duration> {
+    let parsed = duration.parse::<humantime::Duration>()?;
+    let parsed_chrono = Duration::from_std(*parsed)?;
+    Ok(parsed_chrono)
 }

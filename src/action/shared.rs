@@ -7,7 +7,7 @@ use std::{
     sync::LazyLock,
 };
 
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use color_eyre::eyre::{eyre, Context};
 use log::{debug, trace, warn};
 use regex::Regex;
@@ -110,6 +110,7 @@ pub fn get_expired_users(
     config_dir: impl AsRef<Path>,
     config: &Config,
     profile: &Profile,
+    near_expiry_period: Duration,
 ) -> color_eyre::Result<Vec<Username>> {
     let easy_rsa = &config.easy_rsa_path;
     // allow `easy_rsa_pki_dir` to be relative to the config file
@@ -159,7 +160,7 @@ pub fn get_expired_users(
             }
             .ok()?;
 
-            (now > expiry).then_some(name)
+            (now + near_expiry_period > expiry).then_some(name)
         })
         .collect();
 

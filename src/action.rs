@@ -6,6 +6,7 @@ use std::{
     path::Path,
 };
 
+use chrono::Duration;
 use color_eyre::eyre::{bail, eyre, Context};
 use fs_more::directory::{
     copy_directory, BrokenSymlinkBehaviour, DestinationDirectoryRule, DirectoryCopyDepthLimit,
@@ -84,14 +85,15 @@ pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre
     Ok(())
 }
 
-pub fn list_expired(
+pub fn list_near_expired(
     config_dir: impl AsRef<Path>,
     config: &Config,
     profile: &Profile,
+    near_expiry_period: Duration,
 ) -> color_eyre::Result<()> {
     let profile_name = &profile.name;
 
-    let output = get_expired_users(config_dir, config, profile)
+    let output = get_expired_users(config_dir, config, profile, near_expiry_period)
         .wrap_err_with(|| format!(r#"Cannot get expired users of "{profile_name}" profile"#))?
         .into_iter()
         .join("\n");
