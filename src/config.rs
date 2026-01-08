@@ -85,6 +85,10 @@ pub struct Profile {
     /// The EasyRSA PKI directory.
     pub easy_rsa_pki_dir: PathBuf,
 
+    /// The default number of days for which issued certificates should be valid,
+    /// if not explicitly specified via CLI.
+    pub default_days: Option<usize>,
+
     /// Packaging settings.
     pub packaging: Option<Packaging>,
 
@@ -138,6 +142,7 @@ impl Config {
         let profile = Profile {
             name: "example".into(),
             easy_rsa_pki_dir: "/etc/openvpn/server/example.auth.d/".into(),
+            default_days: Some(365),
             packaging: Some(packaging),
             post_action_scripts: Some(CustomScriptsMap::example()),
         };
