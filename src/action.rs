@@ -178,6 +178,7 @@ pub fn renew_user(
     config: &Config,
     profile: &Profile,
     usernames: &[Username],
+    days: Option<usize>,
     keep_old: bool,
     force: bool,
 ) -> color_eyre::Result<()> {
@@ -196,12 +197,14 @@ pub fn renew_user(
     let force_arg = force.then_some("--batch");
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.join(&profile.easy_rsa_pki_dir);
+    let days_arg = days.map(|d| format!("--days={d}"));
+    let days_arg = days_arg.as_ref(); // otherwise use of moved value
 
     let sh = Shell::new().wrap_err("Failed to create subshell")?;
     for username in usernames {
         cmd!(
             sh,
-            "{easy_rsa} {force_arg...} --pki-dir={pki_dir} renew {username}"
+            "{easy_rsa} {force_arg...} --pki-dir={pki_dir} {days_arg...} renew {username}"
         )
         .run_interactive()
         .wrap_err("User renewal command failed to execute")?;

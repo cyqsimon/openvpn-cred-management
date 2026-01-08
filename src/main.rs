@@ -118,12 +118,12 @@ fn main() -> color_eyre::Result<()> {
                     || format!(r#"Failed while adding users to profile "{profile_name}""#),
                 )?
             }
-            UserAction::Renew { usernames, keep_old } => {
-                renew_user(config_dir, &config, profile, usernames, *keep_old, force)
-                    .wrap_err_with(|| {
-                        format!(r#"Failed while renewing users in profile "{profile_name}""#)
-                    })?
-            }
+            UserAction::Renew { usernames, days, keep_old } => renew_user(
+                config_dir, &config, profile, usernames, *days, *keep_old, force,
+            )
+            .wrap_err_with(|| {
+                format!(r#"Failed while renewing users in profile "{profile_name}""#)
+            })?,
             UserAction::Remove { usernames } => {
                 remove_user(config_dir, &config, profile, usernames, force).wrap_err_with(|| {
                     format!(r#"Failed while removing users from profile "{profile_name}""#)

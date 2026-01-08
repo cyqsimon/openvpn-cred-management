@@ -131,6 +131,10 @@ pub enum UserAction {
         #[arg(index = 1, value_name = "NAME", required = true)]
         usernames: Vec<Username>,
 
+        /// The number of days the renewed certificate stays valid.
+        #[arg(short = 'd', long = "days", value_name = "N")]
+        days: Option<usize>,
+
         /// Do not revoke the replaced certificates.
         #[arg(short = 'k', long = "keep-old")]
         keep_old: bool,
