@@ -7,8 +7,9 @@ use std::{
     sync::LazyLock,
 };
 
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use color_eyre::eyre::{eyre, Context};
+use itertools::{Either, Itertools};
 use log::{debug, trace, warn};
 use regex::Regex;
 use xshell::{cmd, Shell};
@@ -106,12 +107,12 @@ pub fn get_users(
     Ok(output)
 }
 
-pub fn get_expired_users(
+pub fn get_users_partitioned_by_expiry(
     config_dir: impl AsRef<Path>,
     config: &Config,
     profile: &Profile,
-    near_expiry_period: Duration,
-) -> color_eyre::Result<Vec<Username>> {
+    partition_point: DateTime<Utc>,
+) -> color_eyre::Result<(Vec<Username>, Vec<Username>)> {
     let easy_rsa = &config.easy_rsa_path;
     // allow `easy_rsa_pki_dir` to be relative to the config file
     let pki_dir = config_dir.as_ref().join(&profile.easy_rsa_pki_dir);
@@ -130,9 +131,8 @@ pub fn get_expired_users(
         )
         .unwrap()
     });
-    let now = Utc::now();
 
-    let expired = show_expire_output
+    let partitioned = show_expire_output
         .lines()
         .filter_map(|line| {
             let Some(captures) = LINE_MATCHER.captures(line) else {
@@ -160,11 +160,17 @@ pub fn get_expired_users(
             }
             .ok()?;
 
-            (now + near_expiry_period > expiry).then_some(name)
+            Some((name, expiry))
         })
-        .collect();
+        .partition_map::<Vec<_>, Vec<_>, _, _, _>(|(name, expiry)| {
+            if expiry < partition_point {
+                Either::Left(name)
+            } else {
+                Either::Right(name)
+            }
+        });
 
-    Ok(expired)
+    Ok(partitioned)
 }
 
 pub fn get_cert_path(

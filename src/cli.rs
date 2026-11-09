@@ -90,8 +90,12 @@ pub enum UserAction {
     /// List all certificates, with optional filtering.
     #[command(visible_alias = "ls")]
     List {
+        /// Only show unexpired certificates.
+        #[arg(short = 'u', long = "unexpired")]
+        only_unexpired: bool,
+
         /// Only show expired certificates.
-        #[arg(short = 'e', long = "expired")]
+        #[arg(short = 'e', long = "expired", conflicts_with_all = ["only_unexpired", "near_expiry_period"])]
         only_expired: bool,
 
         /// Only show certificates that are a within a specific duration until their expiry.
@@ -99,7 +103,6 @@ pub enum UserAction {
             short = 'n',
             long = "near-expiry",
             value_name = "DURATION",
-            conflicts_with = "only_expired",
             value_parser = humantime_parse_duration
         )]
         near_expiry_period: Option<Duration>,

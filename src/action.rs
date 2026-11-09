@@ -6,7 +6,7 @@ use std::{
     path::Path,
 };
 
-use chrono::Duration;
+use chrono::{Duration, Utc};
 use color_eyre::eyre::{bail, eyre, Context};
 use fs_more::directory::{
     copy_directory, BrokenSymlinkBehaviour, DestinationDirectoryRule, DirectoryCopyDepthLimit,
@@ -20,7 +20,9 @@ use zip::ZipWriter;
 use zip_extensions::ZipWriterExtensions;
 
 use crate::{
-    action::shared::{get_cert_path, get_expired_users, get_key_path, get_users, regenerate_crl},
+    action::shared::{
+        get_cert_path, get_key_path, get_users, get_users_partitioned_by_expiry, regenerate_crl,
+    },
     config::{Config, Profile},
     types::Username,
 };
@@ -85,6 +87,20 @@ pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre
     Ok(())
 }
 
+pub fn list_unexpired_users(
+    config_dir: impl AsRef<Path>,
+    config: &Config,
+    profile: &Profile,
+) -> color_eyre::Result<()> {
+    let profile_name = &profile.name;
+    let (_, after) = get_users_partitioned_by_expiry(config_dir, config, profile, Utc::now())
+        .wrap_err_with(|| format!(r#"Cannot get unexpired users of "{profile_name}" profile"#))?;
+
+    let output = after.into_iter().join("\n");
+    println!("{output}");
+    Ok(())
+}
+
 pub fn list_near_expired_users(
     config_dir: impl AsRef<Path>,
     config: &Config,
@@ -92,11 +108,15 @@ pub fn list_near_expired_users(
     near_expiry_period: Duration,
 ) -> color_eyre::Result<()> {
     let profile_name = &profile.name;
+    let (before, _) = get_users_partitioned_by_expiry(
+        config_dir,
+        config,
+        profile,
+        Utc::now() + near_expiry_period,
+    )
+    .wrap_err_with(|| format!(r#"Cannot get expired users of "{profile_name}" profile"#))?;
 
-    let output = get_expired_users(config_dir, config, profile, near_expiry_period)
-        .wrap_err_with(|| format!(r#"Cannot get expired users of "{profile_name}" profile"#))?
-        .into_iter()
-        .join("\n");
+    let output = before.into_iter().join("\n");
     println!("{output}");
     Ok(())
 }
