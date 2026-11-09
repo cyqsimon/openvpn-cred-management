@@ -12,8 +12,8 @@ use simplelog::{ColorChoice, TermLogger, TerminalMode};
 
 use crate::{
     action::{
-        info_user, init_config, list_near_expired, list_profiles, list_users, new_user, package,
-        remove_user, renew_user,
+        info_user, init_config, list_near_expired_users, list_profiles, list_users, new_user,
+        package, remove_user, renew_user,
     },
     cli::{Action, CliArgs, GenAction, ProfileAction, UserAction},
     config::{default_config_path, Config, Profile},
@@ -93,12 +93,12 @@ fn main() -> color_eyre::Result<()> {
         Action::User { action } => match action {
             UserAction::List { only_expired, near_expiry_period } => {
                 if *only_expired {
-                    list_near_expired(config_dir, &config, profile, Duration::zero())
+                    list_near_expired_users(config_dir, &config, profile, Duration::zero())
                         .wrap_err_with(|| {
                             format!(r#"Failed to list expired users of profile "{profile_name}""#)
                         })?
                 } else if let Some(duration) = near_expiry_period {
-                    list_near_expired(config_dir, &config, profile, *duration).wrap_err_with(
+                    list_near_expired_users(config_dir, &config, profile, *duration).wrap_err_with(
                         || {
                             format!(
                                 r#"Failed to list near-expired users of profile "{profile_name}""#

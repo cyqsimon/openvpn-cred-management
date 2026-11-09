@@ -85,7 +85,7 @@ pub fn list_users(config_dir: impl AsRef<Path>, profile: &Profile) -> color_eyre
     Ok(())
 }
 
-pub fn list_near_expired(
+pub fn list_near_expired_users(
     config_dir: impl AsRef<Path>,
     config: &Config,
     profile: &Profile,
