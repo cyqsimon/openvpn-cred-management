@@ -236,7 +236,7 @@ impl TryFrom<ConfigValidator> for Config {
             if !profiles.iter().any(|p| &p.name == name) {
                 bail!(
                     r#"The specified default profile "{name}" does not reference a known profile"#
-                )
+                );
             }
         }
 
@@ -299,7 +299,9 @@ where
 
         // add comments
         match value {
-            I::None => bail!("Encountered a `None` key unexpectedly"),
+            I::None => {
+                bail!("Encountered a `None` key unexpectedly");
+            }
             I::Value(_) => append_docs_as_toml_comments(key.leaf_decor_mut(), docs),
             I::Table(sub_table) => append_docs_as_toml_comments(sub_table.decor_mut(), docs),
             I::ArrayOfTables(array) => {

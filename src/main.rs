@@ -46,7 +46,7 @@ fn main() -> color_eyre::Result<()> {
     // handle completion generation
     if let Action::Gen { action: GenAction::Completion { shell } } = &action {
         let Some(shell) = shell.or_else(clap_complete::Shell::from_env) else {
-            bail!("Failed to determine your shell; please specify one manually.")
+            bail!("Failed to determine your shell; please specify one manually.");
         };
         let mut cmd = CliArgs::command();
         clap_complete::generate(shell, &mut cmd, "ocm", &mut io::stdout());
@@ -62,7 +62,9 @@ fn main() -> color_eyre::Result<()> {
     let config_dir = match config_path.parent() {
         Some(parent) if parent != Path::new("") => parent,
         Some(_) => Path::new("."), // current directory
-        None => bail!("Cannot get the parent directory of {config_path:?}"),
+        None => {
+            bail!("Cannot get the parent directory of {config_path:?}");
+        }
     };
 
     // handle config init

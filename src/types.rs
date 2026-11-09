@@ -71,7 +71,7 @@ impl TryFrom<&Action> for ScriptableActionKind {
         let kind = match action {
             Action::Gen { action: G::Completion { .. } | G::Config }
             | Action::Profile { action: P::List } => {
-                bail!("This action is not scriptable")
+                bail!("This action is not scriptable");
             }
             Action::User { action, .. } => match action {
                 U::List { .. } => Self::UserList,
